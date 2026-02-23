@@ -12,8 +12,10 @@
     <link rel="apple-touch-icon" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
+        // Tesseract will be loaded on demand
+        let Tesseract = null;
+    </script>
         // 版本檢查 - 強制更新
         const APP_VERSION = '20250224c';
         const savedVersion = localStorage.getItem('vango_version');
@@ -144,7 +146,7 @@
 </head>
 <body>
     <header class="app-header">
-        <div class="app-title"><img src="icon.png" alt="V" style="width:28px;height:28px;border-radius:6px;"><span style="margin-left:8px;">凡構報價</span></div>
+        <div class="app-title"><span style="font-size:18px;font-weight:700;color:#d4a853;">凡構</span><span style="margin-left:4px;font-size:14px;opacity:0.9;">報價系統</span></div>
         <div style="display:flex;align-items:center;gap:10px;">
             <div class="app-phone">📞 0912-678-660</div>
             <button onclick="clearCache()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;">🔄</button>
@@ -163,8 +165,11 @@
     <div class="app-content">
         <!-- New Quote -->
         <div id="screen-new" class="screen active">
-            <div style="text-align:center;padding:10px 0 20px;">
-                <img src="icon.png" alt="VANGO" style="width:80px;height:80px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+            <div style="text-align:center;padding:15px 0 20px;">
+                <div style="display:inline-block;background:linear-gradient(135deg, #1a3d34 0%, #2d5a4a 100%);padding:15px 30px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+                    <span style="font-size:32px;font-weight:700;color:#d4a853;font-family:'Playfair Display',serif;">凡構</span>
+                    <span style="display:block;font-size:10px;color:rgba(255,255,255,0.8);letter-spacing:2px;margin-top:2px;">國際實業社</span>
+                </div>
             </div>
             <div class="card">
                 <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
@@ -319,12 +324,16 @@
         let taxRate = parseFloat(localStorage.getItem('vango_taxRate')) || 5;
         
         document.addEventListener('DOMContentLoaded', () => { 
-            renderServices(); 
-            renderAllServices(); 
-            renderQuotes();
-            renderPresets();
-            renderVehiclePresets();
-            document.getElementById('taxRate').value = taxRate;
+            try {
+                renderServices(); 
+                renderAllServices(); 
+                renderQuotes();
+                renderPresets();
+                renderVehiclePresets();
+                document.getElementById('taxRate').value = taxRate;
+            } catch(e) {
+                console.error('Init error:', e);
+            }
         });
         
         function renderVehiclePresets() {
@@ -567,7 +576,12 @@
                 document.getElementById('scannedPlate').textContent = '辨識中...';
                 
                 try {
-                    // 使用 Tesseract.js 進行 OCR
+                    // 動態載入 Tesseract
+                    if (!Tesseract) {
+                        Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/+esm');
+                        Tesseract = Tesseract.default || Tesseract;
+                    }
+                    
                     const result = await Tesseract.recognize(e.target.result, 'eng+chi', {
                         logger: m => console.log(m)
                     });
