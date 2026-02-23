@@ -2,23 +2,18 @@
   "name": "凡構國際 報價系統",
   "short_name": "凡構報價",
   "description": "凡構國際露營車太陽能系統報價系統",
-  "start_url": "/Quote/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#fdfbf7",
   "theme_color": "#1a3d34",
   "orientation": "portrait",
+  "scope": "./",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
     }
   ]
 }

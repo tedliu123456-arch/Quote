@@ -6,12 +6,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a3d34">
-    <meta name="version" content="20250223">
+    <meta name="version" content="20250224">
     <title>凡構國際 報價系統</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
         const APP_VERSION = '20250223';
@@ -182,6 +183,10 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">🚗 車牌號碼</label>
+                    <input type="text" id="licensePlate" class="form-input" placeholder="例如：ABC-1234" style="text-transform:uppercase;">
+                </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
                     <div class="form-group"><label class="form-label">🚗 出廠日期</label><input type="date" id="exitDate" class="form-input"></div>
@@ -226,8 +231,17 @@
         <!-- List -->
         <div id="screen-list" class="screen">
             <div class="card" style="margin-bottom:10px;">
-                <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話或車型..." oninput="filterQuotes()">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話或車型..." oninput="filterQuotes()" style="flex:1;">
+                    <button onclick="scanLicensePlate()" style="background:var(--primary);color:white;border:none;padding:14px 18px;border-radius:12px;font-size:20px;cursor:pointer;">📷</button>
+                </div>
+                <div id="scanResult" style="display:none;margin-top:10px;padding:10px;background:#e8f5e9;border-radius:8px;">
+                    <div style="font-size:12px;color:var(--text-muted);">辨識結果：<span id="scannedPlate" style="font-weight:bold;color:var(--primary);font-size:16px;"></span></div>
+                    <button onclick="searchByPlate()" style="background:var(--accent);color:var(--primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-top:5px;font-weight:bold;">🔍 搜尋此車牌</button>
+                </div>
             </div>
+            <!-- 隱藏的相機 -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="processImage(this)">
             <div id="quotesList"></div>
         </div>
         
@@ -238,6 +252,12 @@
                 <div class="form-group"><label class="form-label">營業稅 (%)</label><input type="number" id="taxRate" class="form-input" placeholder="5" value="5"></div>
                 <button class="btn btn-primary btn-block" onclick="saveSettings()">儲存設定</button>
             </div>
+            
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">📷 車牌資料庫</div>
+                <div id="unknownPlatesList" style="max-height:200px;overflow-y:auto;"></div>
+            </div>
+            
             <div class="card">
                 <div class="card-title" style="margin-bottom:14px;">➕ 新增服務</div>
                 <div class="form-group"><input type="text" id="newServiceName" class="form-input" placeholder="服務名稱"></div>
@@ -343,6 +363,7 @@
             document.getElementById('fab').classList.toggle('show', screen === 'new');
             if(screen === 'list') {
                 document.getElementById('quoteSearch').value = '';
+                document.getElementById('scanResult').style.display = 'none';
                 renderQuotes();
             }
             if(screen === 'presets') { 
@@ -350,6 +371,35 @@
                 renderPresetItemsList();
                 renderPresetServicesList();
                 renderPresets(); 
+            }
+            if(screen === 'services') {
+                renderUnknownPlates();
+            }
+        }
+        
+        function renderUnknownPlates() {
+            const container = document.getElementById('unknownPlatesList');
+            const plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+            
+            if(plates.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:10px;">尚無資料</div>';
+                return;
+            }
+            
+            container.innerHTML = plates.map((p, i) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+                    <span style="font-weight:bold;font-size:14px;">🚗 ${p.plate}</span>
+                    <button onclick="deleteUnknownPlate(${i})" style="background:var(--danger);color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">🗑️</button>
+                </div>
+            `).join('');
+        }
+        
+        function deleteUnknownPlate(index) {
+            if(confirm('確定要刪除？')) {
+                let plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+                plates.splice(index, 1);
+                localStorage.setItem('vango_unknown_plates', JSON.stringify(plates));
+                renderUnknownPlates();
             }
         }
         
@@ -473,6 +523,7 @@
                     name, phone, 
                     line: document.getElementById('customerLine').value.trim(), 
                     vehicle: document.getElementById('vehicleInfo').value.trim(),
+                    licensePlate: document.getElementById('licensePlate').value.trim().toUpperCase(),
                     entryDate: document.getElementById('entryDate').value,
                     exitDate: document.getElementById('exitDate').value,
                     salesPerson: document.getElementById('salesPerson').value.trim()
@@ -497,6 +548,106 @@
             switchScreen('list');
         }
         
+        // ===== 車牌辨識功能 =====
+        let currentScannedPlate = '';
+        
+        function scanLicensePlate() {
+            document.getElementById('cameraInput').click();
+        }
+        
+        function processImage(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                // 顯示載入中
+                document.getElementById('scanResult').style.display = 'block';
+                document.getElementById('scannedPlate').textContent = '辨識中...';
+                
+                try {
+                    // 使用 Tesseract.js 進行 OCR
+                    const result = await Tesseract.recognize(e.target.result, 'eng+chi', {
+                        logger: m => console.log(m)
+                    });
+                    
+                    // 清理辨識結果
+                    let plate = result.data.text.replace(/[^A-Z0-9-zZ-Uu04-9]/gi, '').trim();
+                    plate = plate.toUpperCase();
+                    
+                    // 台灣車牌格式清理
+                    plate = plate.replace(/[OQ]/g, '0').replace(/[Z2]/g, '2').replace(/[Ss]/g, '5').replace(/[Bb]/g, '8');
+                    
+                    currentScannedPlate = plate;
+                    document.getElementById('scannedPlate').textContent = plate || '無法辨識';
+                    
+                    if(plate) {
+                        // 自動搜尋
+                        searchByPlate();
+                    }
+                } catch(err) {
+                    document.getElementById('scannedPlate').textContent = '辨識失敗，請重試';
+                    console.error(err);
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function searchByPlate() {
+            if (!currentScannedPlate) return;
+            
+            const plate = currentScannedPlate.toLowerCase();
+            const container = document.getElementById('quotesList');
+            
+            // 搜尋所有報價記錄
+            const matchedQuotes = quotes.filter(q => {
+                const vehicle = (q.customer.vehicle || '').toLowerCase().replace(/[\s-]/g, '');
+                return vehicle.includes(plate) || plate.includes(vehicle);
+            });
+            
+            if (matchedQuotes.length > 0) {
+                // 找到匹配的報價
+                let msg = '找到 ' + matchedQuotes.length + ' 筆資料：\n\n';
+                matchedQuotes.forEach((q, i) => {
+                    msg += (i+1) + '. ' + q.customer.name + ' - ' + q.customer.vehicle + '\n';
+                    msg += '   📅 ' + new Date(q.date).toLocaleDateString('zh-TW') + '\n';
+                    msg += '   💰 $' + q.total.toLocaleString() + '\n\n';
+                });
+                alert(msg);
+                
+                // 自動填入第一個匹配的資料
+                const firstMatch = quotes.indexOf(matchedQuotes[0]);
+                editQuote(firstMatch);
+            } else {
+                // 沒找到，儲存到資料庫
+                saveUnmatchedPlate(currentScannedPlate);
+                alert('📷 車牌 ' + currentScannedPlate + '\n\n未找到報價記錄，已儲存到資料庫！');
+                
+                // 自動填入車牌
+                document.getElementById('vehicleInfo').value = currentScannedPlate;
+                document.getElementById('licensePlate').value = currentScannedPlate;
+                switchScreen('new');
+            }
+        }
+        
+        function saveUnmatchedPlate(plate) {
+            // 取得現有資料
+            let plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+            
+            // 檢查是否已存在
+            const exists = plates.find(p => p.plate === plate);
+            if (!exists) {
+                plates.push({
+                    plate: plate,
+                    found: false,
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem('vango_unknown_plates', JSON.stringify(plates));
+            }
+        }
+        
         function filterQuotes() {
             const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase();
             const container = document.getElementById('quotesList');
@@ -510,6 +661,7 @@
                 (q.customer.name && q.customer.name.toLowerCase().includes(keyword)) ||
                 (q.customer.phone && q.customer.phone.toLowerCase().includes(keyword)) ||
                 (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(keyword)) ||
+                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().includes(keyword)) ||
                 (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().includes(keyword))
             );
             
@@ -569,6 +721,7 @@
             document.getElementById('customerPhone').value = q.customer.phone || '';
             document.getElementById('customerLine').value = q.customer.line || '';
             document.getElementById('vehicleInfo').value = q.customer.vehicle || '';
+            document.getElementById('licensePlate').value = q.customer.licensePlate || '';
             document.getElementById('entryDate').value = q.customer.entryDate || '';
             document.getElementById('exitDate').value = q.customer.exitDate || '';
             document.getElementById('salesPerson').value = q.customer.salesPerson || '';
@@ -585,7 +738,7 @@
         function exportQuotePDF(idx) {
             const q = quotes[idx];
             const {subtotal, tax, total, deposit} = q;
-            const {name, phone, line, vehicle, entryDate, exitDate, salesPerson} = q.customer;
+            const {name, phone, line, vehicle, licensePlate, entryDate, exitDate, salesPerson} = q.customer;
             const notes = q.notes;
             const taxRate = q.taxRate;
             const quoteDate = new Date(q.date).toLocaleDateString('zh-TW');
@@ -689,6 +842,7 @@
                 (q.customer.salesPerson ? '\n👔 業務：' + q.customer.salesPerson : '') +
                 (q.customer.line ? '\n💬 LINE：' + q.customer.line : '') +
                 (q.customer.vehicle ? '\n🚗 車輛：' + q.customer.vehicle : '') +
+                (q.customer.licensePlate ? '\n🚗 車牌：' + q.customer.licensePlate : '') +
                 dateInfo +
                 '\n\n📦 項目：\n' + q.items.map(i => '  • ' + i.name + ' x' + i.qty + ' = $' + (i.price * i.qty).toLocaleString()).join('\n') +
                 '\n\n💰 小計：$' + q.subtotal.toLocaleString() +
@@ -712,6 +866,7 @@
             document.getElementById('customerPhone').value = '';
             document.getElementById('customerLine').value = '';
             document.getElementById('vehicleInfo').value = '';
+            document.getElementById('licensePlate').value = '';
             document.getElementById('entryDate').value = '';
             document.getElementById('exitDate').value = '';
             document.getElementById('salesPerson').value = '';
@@ -1031,9 +1186,10 @@
             html2pdf().set(opt).from(pdfContent).save();
         }
         
-        if('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
+        // PWA 功能 - 註冊 service worker
+        // if('serviceWorker' in navigator) {
+        //     navigator.serviceWorker.register('sw.js').catch(() => {});
+        // }
     </script>
 </body>
 </html>
