@@ -13,8 +13,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
-        // Tesseract will be loaded on demand
-        let Tesseract = null;
     </script>
         // 版本檢查 - 強制更新
         const APP_VERSION = '20250224c';
@@ -236,17 +234,8 @@
         <!-- List -->
         <div id="screen-list" class="screen">
             <div class="card" style="margin-bottom:10px;">
-                <div style="display:flex;gap:8px;">
-                    <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話或車型..." oninput="filterQuotes()" style="flex:1;">
-                    <button onclick="scanLicensePlate()" style="background:var(--primary);color:white;border:none;padding:14px 18px;border-radius:12px;font-size:20px;cursor:pointer;">📷</button>
-                </div>
-                <div id="scanResult" style="display:none;margin-top:10px;padding:10px;background:#e8f5e9;border-radius:8px;">
-                    <div style="font-size:12px;color:var(--text-muted);">辨識結果：<span id="scannedPlate" style="font-weight:bold;color:var(--primary);font-size:16px;"></span></div>
-                    <button onclick="searchByPlate()" style="background:var(--accent);color:var(--primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-top:5px;font-weight:bold;">🔍 搜尋此車牌</button>
-                </div>
+                <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話、車牌或車型..." oninput="filterQuotes()">
             </div>
-            <!-- 隱藏的相機 -->
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="processImage(this)">
             <div id="quotesList"></div>
         </div>
         
@@ -570,49 +559,21 @@
             const file = input.files[0];
             const reader = new FileReader();
             
-            reader.onload = async function(e) {
-                // 顯示載入中
+            reader.onload = function(e) {
                 document.getElementById('scanResult').style.display = 'block';
-                document.getElementById('scannedPlate').textContent = '辨識中...';
-                
-                try {
-                    // 動態載入 Tesseract
-                    if (!Tesseract) {
-                        Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/+esm');
-                        Tesseract = Tesseract.default || Tesseract;
-                    }
-                    
-                    const result = await Tesseract.recognize(e.target.result, 'eng+chi', {
-                        logger: m => console.log(m)
-                    });
-                    
-                    // 清理辨識結果
-                    let plate = result.data.text.replace(/[^A-Z0-9-zZ-Uu04-9]/gi, '').trim();
-                    plate = plate.toUpperCase();
-                    
-                    // 台灣車牌格式清理
-                    plate = plate.replace(/[OQ]/g, '0').replace(/[Z2]/g, '2').replace(/[Ss]/g, '5').replace(/[Bb]/g, '8');
-                    
-                    currentScannedPlate = plate;
-                    document.getElementById('scannedPlate').textContent = plate || '無法辨識';
-                    
-                    if(plate) {
-                        // 自動搜尋
-                        searchByPlate();
-                    }
-                } catch(err) {
-                    document.getElementById('scannedPlate').textContent = '辨識失敗，請重試';
-                    console.error(err);
-                }
+                document.getElementById('scannedPlate').textContent = '請手動輸入車牌';
             };
             
             reader.readAsDataURL(file);
         }
         
         function searchByPlate() {
-            if (!currentScannedPlate) return;
+            const plateInput = document.getElementById('quoteSearch').value.trim().toUpperCase();
+            if (!plateInput) return;
             
-            const plate = currentScannedPlate.toLowerCase();
+            currentScannedPlate = plateInput;
+            
+            const plate = plateInput.toLowerCase();
             const container = document.getElementById('quotesList');
             
             // 搜尋所有報價記錄
