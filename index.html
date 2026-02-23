@@ -6,11 +6,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a3d34">
+    <meta name="version" content="20250223">
     <title>凡構國際 報價系統</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=20250223">
     <link rel="apple-touch-icon" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        // 版本檢查 - 強制更新
+        const APP_VERSION = '20250223';
+        const savedVersion = localStorage.getItem('vango_version');
+        
+        if (savedVersion !== APP_VERSION) {
+            // 版本不同，清除舊資料並更新
+            console.log('版本更新:', savedVersion, '->', APP_VERSION);
+            localStorage.setItem('vango_version', APP_VERSION);
+            // 不清除使用者資料，只更新版本號
+        }
+    </script>
     <style>
         :root {
             --primary: #1a3d34;
@@ -93,7 +106,7 @@
         .service-item:active { background: var(--accent); transform: scale(0.98); }
         
         /* Items */
-        .item-row { display: grid; grid-template-columns: 1fr 55px 75px 36px; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .item-row { display: grid; grid-template-columns: 1fr 90px 75px 36px; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
         .item-input { padding: 10px; border: 2px solid #eee; border-radius: 10px; font-size: 13px; background: var(--bg); }
         .item-input:focus { border-color: var(--accent); }
         .item-delete { background: none; border: none; color: var(--danger); font-size: 20px; cursor: pointer; }
@@ -124,15 +137,27 @@
         
         /* Services List */
         .service-list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
-        .service-name { font-size: 14px; }
-        .service-price { color: var(--accent); font-weight: 700; }
+        .service-name { font-size: 14px; flex: 1; }
+        .service-price { color: var(--accent); font-weight: 700; min-width: 80px; text-align: right; }
     </style>
 </head>
 <body>
     <header class="app-header">
         <div class="app-title"><img src="icon.png" alt="V" style="width:28px;height:28px;border-radius:6px;"><span style="margin-left:8px;">凡構報價</span></div>
-        <div class="app-phone">📞 0912-678-660</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="app-phone">📞 0912-678-660</div>
+            <button onclick="clearCache()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;">🔄</button>
+        </div>
     </header>
+    
+    <script>
+        function clearCache() {
+            if(confirm('清除快取並重新載入？\n\n这会刷新页面但保留您的报价记录。')) {
+                localStorage.setItem('vango_version', APP_VERSION);
+                location.reload();
+            }
+        }
+    </script>
     
     <div class="app-content">
         <!-- New Quote -->
@@ -144,11 +169,19 @@
                 <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">姓名 *</label><input type="text" id="customerName" class="form-input" placeholder="王先生"></div>
-                    <div class="form-group"><label class="form-label">電話 *</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
+                    <div class="form-group"><label class="form-label">電話</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
                 </div>
                 <div class="form-group"><label class="form-label">LINE ID</label><input type="text" id="customerLine" class="form-input" placeholder="line12345"></div>
                 <div class="form-group"><label class="form-label">👤 業務</label><input type="text" id="salesPerson" class="form-input" placeholder="輸入業務姓名"></div>
-                <div class="form-group"><label class="form-label">車輛</label><input type="text" id="vehicleInfo" class="form-input" placeholder="Toyota Hiace"></div>
+                <div class="form-group">
+                    <label class="form-label">車輛</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="vehicleInfo" class="form-input" placeholder="Toyota Hiace" style="flex:1;">
+                        <select id="vehiclePreset" onchange="loadVehiclePreset()" style="padding:12px;border:2px solid var(--accent);border-radius:10px;font-size:14px;background:white;cursor:pointer;">
+                            <option value="">🚗 快捷鍵</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
                     <div class="form-group"><label class="form-label">🚗 出廠日期</label><input type="date" id="exitDate" class="form-input"></div>
@@ -270,8 +303,30 @@
             renderAllServices(); 
             renderQuotes();
             renderPresets();
+            renderVehiclePresets();
             document.getElementById('taxRate').value = taxRate;
         });
+        
+        function renderVehiclePresets() {
+            const select = document.getElementById('vehiclePreset');
+            if(presets.length > 0) {
+                select.innerHTML = '<option value="">🚗 快捷鍵</option>' + 
+                    presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+            }
+        }
+        
+        function loadVehiclePreset() {
+            const idx = document.getElementById('vehiclePreset').value;
+            if(idx !== '') {
+                const p = presets[idx];
+                document.getElementById('vehicleInfo').value = p.name;
+                selectedItems = p.items.map(i => ({...i, qty: 1, id: Date.now() + Math.random()}));
+                renderItems();
+                calculate();
+                // 重置選項
+                document.getElementById('vehiclePreset').value = '';
+            }
+        }
         
         function saveSettings() {
             taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
@@ -311,9 +366,26 @@
                 `<div class="service-list-item">
                     <span class="service-name">${s.name}</span>
                     <span class="service-price">$${s.price.toLocaleString()}</span>
-                    <button class="item-delete" onclick="deleteService(${i})" style="font-size:16px;padding:4px 8px;">🗑️</button>
+                    <div style="min-width:70px;text-align:right;">
+                        <button onclick="editService(${i})" style="background:var(--accent);color:var(--primary);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:14px;margin-right:4px;">✏️</button>
+                        <button class="item-delete" onclick="deleteService(${i})" style="font-size:16px;padding:4px 8px;">🗑️</button>
+                    </div>
                 </div>`
             ).join('');
+        }
+        
+        function editService(index) {
+            const s = services[index];
+            const newName = prompt('編輯服務名稱：', s.name);
+            if(newName === null) return;
+            const newPrice = prompt('編輯服務價格：', s.price);
+            if(newPrice === null) return;
+            
+            services[index] = {name: newName.trim(), price: parseInt(newPrice) || 0};
+            localStorage.setItem('vango_services', JSON.stringify(services));
+            renderServices();
+            renderAllServices();
+            alert('已更新！');
         }
         
         function deleteService(index) {
@@ -347,7 +419,7 @@
         function updateQty(id, qty) {
             const item = selectedItems.find(i => i.id === id);
             if(item) item.qty = Math.max(1, parseInt(qty) || 1);
-            calculate();
+            renderItems();
         }
         
         function renderItems() {
@@ -358,7 +430,11 @@
                 container.innerHTML = selectedItems.map((item, idx) => `
                     <div class="item-row">
                         <span style="font-size:13px;">${item.name}</span>
-                        <input type="number" class="item-input" value="${item.qty}" min="1" onchange="updateQty(${item.id}, this.value)">
+                        <div style="display:flex;align-items:center;gap:5px;">
+                            <button onclick="updateQty(${item.id}, ${item.qty - 1})" style="background:var(--primary);color:white;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">-</button>
+                            <span style="min-width:30px;text-align:center;font-size:14px;font-weight:600;">${item.qty}</span>
+                            <button onclick="updateQty(${item.id}, ${item.qty + 1})" style="background:var(--primary);color:white;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">+</button>
+                        </div>
                         <span style="font-size:13px;color:var(--accent);font-weight:600;">$${(item.qty*item.price).toLocaleString()}</span>
                         <button class="item-delete" onclick="removeItem(${item.id})">×</button>
                     </div>
@@ -386,7 +462,7 @@
         function saveQuote() {
             const name = document.getElementById('customerName').value.trim();
             const phone = document.getElementById('customerPhone').value.trim();
-            if(!name || !phone) { alert('請填寫姓名和電話'); return; }
+            if(!name) { alert('請填寫姓名'); return; }
             if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
             
             const {subtotal, tax, total, deposit, balance} = calculate();
@@ -808,6 +884,7 @@
             localStorage.setItem('vango_presets', JSON.stringify(presets));
             editingPresetIndex = null;
             renderPresets();
+            renderVehiclePresets();
             renderPresetItemsList();
             alert('已儲存車型！');
         }
@@ -816,6 +893,7 @@
             editingPresetIndex = null;
             presetItems = [];
             renderPresets();
+            renderVehiclePresets();
             renderPresetItemsList();
         }
         
@@ -834,6 +912,7 @@
             presetItems = [];
             renderPresetItemsList();
             renderPresets();
+            renderVehiclePresets();
             document.getElementById('presetName').value = '';
             alert('已儲存「' + name + '」快捷鍵！');
         }
@@ -852,12 +931,13 @@
             presets.splice(index, 1);
             localStorage.setItem('vango_presets', JSON.stringify(presets));
             renderPresets();
+            renderVehiclePresets();
         }
         
         async function generatePDF() {
             const name = document.getElementById('customerName').value.trim();
             const phone = document.getElementById('customerPhone').value.trim();
-            if(!name || !phone) { alert('請填寫姓名和電話'); return; }
+            if(!name) { alert('請填寫姓名'); return; }
             if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
             
             const {subtotal, tax, total} = calculate();
