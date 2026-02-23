@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a3d34">
+    <title>凡構國際 報價系統</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a3d34;
+            --primary-light: #2d5a4a;
+            --accent: #d4a853;
+            --accent-light: #f0d78c;
+            --bg: #fdfbf7;
+            --surface: #ffffff;
+            --text: #2c2c2c;
+            --text-muted: #6b6b6b;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        html, body { height: 100%; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* App Header */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; padding: 14px 18px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 15px rgba(26,61,52,0.3);
+        }
+        
+        .app-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .app-logo { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .app-phone { font-size: 12px; opacity: 0.9; }
+        
+        /* Content */
+        .app-content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
+        
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--surface);
+            border-top: 1px solid rgba(212,168,83,0.2);
+            display: flex; justify-content: space-around; padding: 10px 0 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 8px 20px; color: var(--text-muted); font-size: 11px;
+            background: none; border: none; cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active .nav-icon { background: var(--accent); color: var(--primary); }
+        .nav-icon { font-size: 20px; margin-bottom: 4px; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--bg); transition: all 0.2s; }
+        
+        /* Cards */
+        .card { background: var(--surface); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .card-title { font-size: 15px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        
+        /* Form */
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+        .form-input { width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; background: var(--bg); transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        /* Buttons */
+        .btn { padding: 16px 24px; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 4px 15px rgba(26,61,52,0.3); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-accent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: var(--primary); font-weight: 700; }
+        .btn-accent:active { transform: scale(0.98); }
+        .btn-block { width: 100%; }
+        
+        /* Service Grid */
+        .service-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+        .service-item { padding: 14px 10px; background: var(--bg); border-radius: 14px; cursor: pointer; text-align: center; font-size: 12px; transition: all 0.2s; border: 2px solid transparent; }
+        .service-item:active { background: var(--accent); transform: scale(0.98); }
+        
+        /* Items */
+        .item-row { display: grid; grid-template-columns: 1fr 55px 75px 36px; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .item-input { padding: 10px; border: 2px solid #eee; border-radius: 10px; font-size: 13px; background: var(--bg); }
+        .item-input:focus { border-color: var(--accent); }
+        .item-delete { background: none; border: none; color: var(--danger); font-size: 20px; cursor: pointer; }
+        
+        /* Summary */
+        .summary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border-radius: 20px; padding: 20px; margin: 16px 0; box-shadow: 0 8px 25px rgba(26,61,52,0.3); }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .summary-total { font-size: 22px; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 10px; }
+        
+        /* Quote List */
+        .quote-card { background: var(--surface); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); border-left: 4px solid var(--accent); }
+        .quote-customer { font-weight: 700; font-size: 16px; color: var(--primary); }
+        .quote-vehicle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+        .quote-total { font-size: 18px; font-weight: 700; color: var(--accent); margin-top: 8px; }
+        .quote-date { font-size: 11px; color: var(--text-muted); }
+        
+        /* Empty */
+        .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        
+        /* FAB */
+        .fab { position: fixed; bottom: 90px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: var(--primary); font-size: 28px; border: none; box-shadow: 0 6px 20px rgba(212,168,83,0.4); cursor: pointer; display: none; align-items: center; justify-content: center; }
+        .fab.show { display: flex; }
+        
+        /* Screen */
+        .screen { display: none; }
+        .screen.active { display: block; }
+        
+        /* Services List */
+        .service-list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+        .service-name { font-size: 14px; }
+        .service-price { color: var(--accent); font-weight: 700; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="app-title"><img src="icon.png" alt="V" style="width:28px;height:28px;border-radius:6px;"><span style="margin-left:8px;">凡構報價</span></div>
+        <div class="app-phone">📞 0912-678-660</div>
+    </header>
+    
+    <div class="app-content">
+        <!-- New Quote -->
+        <div id="screen-new" class="screen active">
+            <div style="text-align:center;padding:10px 0 20px;">
+                <img src="icon.png" alt="VANGO" style="width:80px;height:80px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">姓名 *</label><input type="text" id="customerName" class="form-input" placeholder="王先生"></div>
+                    <div class="form-group"><label class="form-label">電話 *</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
+                </div>
+                <div class="form-group"><label class="form-label">LINE ID</label><input type="text" id="customerLine" class="form-input" placeholder="line12345"></div>
+                <div class="form-group"><label class="form-label">👤 業務</label><input type="text" id="salesPerson" class="form-input" placeholder="輸入業務姓名"></div>
+                <div class="form-group"><label class="form-label">車輛</label><input type="text" id="vehicleInfo" class="form-input" placeholder="Toyota Hiace"></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">🚗 出廠日期</label><input type="date" id="exitDate" class="form-input"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">🔧 選擇服務</div></div>
+                <div class="service-grid" id="serviceGrid"></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header"><div class="card-title">📝 已選項目 <span id="itemCount" style="font-weight:400;color:var(--text-muted);font-size:12px;">0</span></div></div>
+                <div id="selectedItems"></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">📝 備註</div>
+                <textarea id="quoteNotes" class="form-input" style="min-height:80px;" placeholder="輸入備註說明..."></textarea>
+            </div>
+            
+            <div class="summary">
+                <div class="summary-row"><span>小計</span><span id="subtotal">$0</span></div>
+                <div class="summary-row"><span>稅金 (5%)</span><span id="tax">$0</span></div>
+                <div class="summary-row summary-total"><span>總計</span><span id="total">$0</span></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">💰 訂金</div>
+                <div class="form-group">
+                    <input type="number" id="depositAmount" class="form-input" placeholder="輸入訂金金額" value="0" onchange="calculate()">
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">
+                    尚欠金額：<span id="balanceAmount" style="color:var(--danger);font-weight:600;">$0</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-block" onclick="saveQuote()">💾 儲存報價</button>
+            <button class="btn btn-accent btn-block" style="margin-top:10px;" onclick="generatePDF()">📄 產生 PDF</button>
+        </div>
+        
+        <!-- List -->
+        <div id="screen-list" class="screen">
+            <div class="card" style="margin-bottom:10px;">
+                <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話或車型..." oninput="filterQuotes()">
+            </div>
+            <div id="quotesList"></div>
+        </div>
+        
+        <!-- Services -->
+        <div id="screen-services" class="screen">
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">⚙️ 設定</div>
+                <div class="form-group"><label class="form-label">營業稅 (%)</label><input type="number" id="taxRate" class="form-input" placeholder="5" value="5"></div>
+                <button class="btn btn-primary btn-block" onclick="saveSettings()">儲存設定</button>
+            </div>
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">➕ 新增服務</div>
+                <div class="form-group"><input type="text" id="newServiceName" class="form-input" placeholder="服務名稱"></div>
+                <div class="form-group"><input type="number" id="newServicePrice" class="form-input" placeholder="價格"></div>
+                <button class="btn btn-primary btn-block" onclick="addNewService()">新增</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">📋 服務項目</div>
+                <div id="allServices"></div>
+            </div>
+        </div>
+        
+        <!-- Presets -->
+        <div id="screen-presets" class="screen">
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">🚗 車型快捷鍵</div>
+                <div class="form-group"><input type="text" id="presetName" class="form-input" placeholder="輸入車型名稱 (如：福斯加州號)"></div>
+                <div id="presetItemsList" style="margin:10px 0;"></div>
+                <div style="margin:10px 0;">
+                    <div class="card-title" style="font-size:14px;margin-bottom:8px;">📋 選擇服務項目</div>
+                    <div id="presetServicesList"></div>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="savePreset()">💾 儲存為快捷鍵</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">📂 已儲存的車型</div>
+                <div id="presetsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="fab" id="fab" onclick="addNewItem()">+</button>
+    
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchScreen('new')">
+            <span class="nav-icon">📝</span><span>報價</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('list')">
+            <span class="nav-icon">📋</span><span>列表</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('presets')">
+            <span class="nav-icon">🚗</span><span>車型</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('services')">
+            <span class="nav-icon">⚙️</span><span>服務</span>
+        </button>
+    </nav>
+
+    <script>
+        let services = JSON.parse(localStorage.getItem('vango_services')) || [
+            {name:'太陽能200W',price:12000},{name:'太陽能400W',price:22000},{name:'鋰電100AH',price:18000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'Inverter',price:15000},{name:'USB座',price:1200},{name:'12V冰箱',price:12000},{name:'LED燈組',price:3500},{name:'工資(基本)',price:5000},{name:'工資(專業)',price:8000}
+        ];
+        
+        let quotes = JSON.parse(localStorage.getItem('vango_quotes')) || [];
+        let selectedItems = [];
+        let editingQuoteIndex = null;
+        let taxRate = parseFloat(localStorage.getItem('vango_taxRate')) || 5;
+        
+        document.addEventListener('DOMContentLoaded', () => { 
+            renderServices(); 
+            renderAllServices(); 
+            renderQuotes();
+            renderPresets();
+            document.getElementById('taxRate').value = taxRate;
+        });
+        
+        function saveSettings() {
+            taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            localStorage.setItem('vango_taxRate', taxRate);
+            alert('設定已儲存！稅率：' + taxRate + '%');
+            calculate();
+        }
+        
+        function switchScreen(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('screen-' + screen).classList.add('active');
+            document.querySelector(`[onclick="switchScreen('${screen}')"]`).classList.add('active');
+            document.getElementById('fab').classList.toggle('show', screen === 'new');
+            if(screen === 'list') {
+                document.getElementById('quoteSearch').value = '';
+                renderQuotes();
+            }
+            if(screen === 'presets') { 
+                presetItems = [];
+                renderPresetItemsList();
+                renderPresetServicesList();
+                renderPresets(); 
+            }
+        }
+        
+        function renderServices() {
+            const grid = document.getElementById('serviceGrid');
+            grid.innerHTML = services.map((s, i) => 
+                `<div class="service-item" onclick="addItem(${i})">${s.name}<br><strong>$${s.price.toLocaleString()}</strong></div>`
+            ).join('');
+        }
+        
+        function renderAllServices() {
+            const list = document.getElementById('allServices');
+            list.innerHTML = services.map((s, i) => 
+                `<div class="service-list-item">
+                    <span class="service-name">${s.name}</span>
+                    <span class="service-price">$${s.price.toLocaleString()}</span>
+                    <button class="item-delete" onclick="deleteService(${i})" style="font-size:16px;padding:4px 8px;">🗑️</button>
+                </div>`
+            ).join('');
+        }
+        
+        function deleteService(index) {
+            if(confirm('確定要刪除「' + services[index].name + '」？')) {
+                services.splice(index, 1);
+                localStorage.setItem('vango_services', JSON.stringify(services));
+                renderServices();
+                renderAllServices();
+            }
+        }
+        
+        function addItem(index) {
+            const s = services[index];
+            selectedItems.push({...s, qty: 1, id: Date.now()});
+            renderItems();
+        }
+        
+        function addNewItem() {
+            const name = prompt('項目名稱:');
+            if(!name) return;
+            const price = parseInt(prompt('價格:') || '0');
+            if(price > 0) selectedItems.push({name, price, qty: 1, id: Date.now()});
+            renderItems();
+        }
+        
+        function removeItem(id) {
+            selectedItems = selectedItems.filter(i => i.id !== id);
+            renderItems();
+        }
+        
+        function updateQty(id, qty) {
+            const item = selectedItems.find(i => i.id === id);
+            if(item) item.qty = Math.max(1, parseInt(qty) || 1);
+            calculate();
+        }
+        
+        function renderItems() {
+            const container = document.getElementById('selectedItems');
+            if(selectedItems.length === 0) {
+                container.innerHTML = '<div class="empty" style="padding:20px;">點擊上方服務項目新增</div>';
+            } else {
+                container.innerHTML = selectedItems.map((item, idx) => `
+                    <div class="item-row">
+                        <span style="font-size:13px;">${item.name}</span>
+                        <input type="number" class="item-input" value="${item.qty}" min="1" onchange="updateQty(${item.id}, this.value)">
+                        <span style="font-size:13px;color:var(--accent);font-weight:600;">$${(item.qty*item.price).toLocaleString()}</span>
+                        <button class="item-delete" onclick="removeItem(${item.id})">×</button>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('itemCount').textContent = selectedItems.length;
+            calculate();
+        }
+        
+        function calculate() {
+            let subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+            let tax = Math.round(subtotal * (taxRate / 100));
+            let total = subtotal + tax;
+            let deposit = parseInt(document.getElementById('depositAmount').value) || 0;
+            let balance = total - deposit;
+            
+            document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString();
+            document.getElementById('tax').textContent = '$' + tax.toLocaleString() + ' (' + taxRate + '%)';
+            document.getElementById('total').textContent = '$' + total.toLocaleString();
+            document.getElementById('balanceAmount').textContent = '$' + balance.toLocaleString();
+            
+            return {subtotal, tax, total, deposit, balance};
+        }
+        
+        function saveQuote() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            if(!name || !phone) { alert('請填寫姓名和電話'); return; }
+            if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
+            
+            const {subtotal, tax, total, deposit, balance} = calculate();
+            const quote = {
+                id: editingQuoteIndex !== null ? quotes[editingQuoteIndex].id : 'VQ' + Date.now(),
+                date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
+                customer: {
+                    name, phone, 
+                    line: document.getElementById('customerLine').value.trim(), 
+                    vehicle: document.getElementById('vehicleInfo').value.trim(),
+                    entryDate: document.getElementById('entryDate').value,
+                    exitDate: document.getElementById('exitDate').value,
+                    salesPerson: document.getElementById('salesPerson').value.trim()
+                },
+                items: selectedItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
+                notes: document.getElementById('quoteNotes').value.trim(),
+                subtotal, tax, total, deposit, balance, taxRate
+            };
+            
+            if(editingQuoteIndex !== null) {
+                quotes[editingQuoteIndex] = quote;
+                alert('報價單已更新！');
+            } else {
+                quotes.unshift(quote);
+                alert('報價單已儲存！');
+            }
+            
+            localStorage.setItem('vango_quotes', JSON.stringify(quotes));
+            editingQuoteIndex = null;
+            clearForm();
+            renderQuotes();
+            switchScreen('list');
+        }
+        
+        function filterQuotes() {
+            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase();
+            const container = document.getElementById('quotesList');
+            
+            if(keyword === '') {
+                renderQuotes();
+                return;
+            }
+            
+            const filtered = quotes.filter(q => 
+                (q.customer.name && q.customer.name.toLowerCase().includes(keyword)) ||
+                (q.customer.phone && q.customer.phone.toLowerCase().includes(keyword)) ||
+                (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(keyword)) ||
+                (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().includes(keyword))
+            );
+            
+            if(filtered.length === 0) {
+                container.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>找不到符合的報價記錄</p></div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map((q, idx) => {
+                const realIdx = quotes.indexOf(q);
+                return `
+                <div class="quote-card" onclick="viewQuoteDetail(${realIdx})">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="quote-customer">${q.customer.name}${q.customer.salesPerson ? ' <span style="font-size:11px;background:var(--accent);color:var(--primary);padding:2px 6px;border-radius:4px;">' + q.customer.salesPerson + '</span>' : ''}</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="quote-date">📅 ${new Date(q.date).toLocaleDateString('zh-TW')}</span>
+                            <button onclick="event.stopPropagation();editQuote(${realIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;">✏️</button>
+                            <button onclick="event.stopPropagation();exportQuotePDF(${realIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;">📄</button>
+                            <button onclick="event.stopPropagation();deleteQuote(${realIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
+                    <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
+                </div>
+            `}).join('');
+        }
+        
+        function renderQuotes() {
+            const container = document.getElementById('quotesList');
+            if(quotes.length === 0) {
+                container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>尚無報價記錄</p></div>';
+                return;
+            }
+            container.innerHTML = quotes.map((q, idx) => `
+                <div class="quote-card" onclick="viewQuoteDetail(${idx})">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="quote-customer">${q.customer.name}${q.customer.salesPerson ? ' <span style="font-size:11px;background:var(--accent);color:var(--primary);padding:2px 6px;border-radius:4px;">' + q.customer.salesPerson + '</span>' : ''}</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="quote-date">📅 ${new Date(q.date).toLocaleDateString('zh-TW')}</span>
+                            <button onclick="event.stopPropagation();editQuote(${idx})" style="background:none;border:none;font-size:16px;cursor:pointer;">✏️</button>
+                            <button onclick="event.stopPropagation();exportQuotePDF(${idx})" style="background:none;border:none;font-size:16px;cursor:pointer;">📄</button>
+                            <button onclick="event.stopPropagation();deleteQuote(${idx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
+                    <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
+                </div>
+            `).join('');
+        }
+        
+        function editQuote(idx) {
+            const q = quotes[idx];
+            editingQuoteIndex = idx;
+            document.getElementById('customerName').value = q.customer.name || '';
+            document.getElementById('customerPhone').value = q.customer.phone || '';
+            document.getElementById('customerLine').value = q.customer.line || '';
+            document.getElementById('vehicleInfo').value = q.customer.vehicle || '';
+            document.getElementById('entryDate').value = q.customer.entryDate || '';
+            document.getElementById('exitDate').value = q.customer.exitDate || '';
+            document.getElementById('salesPerson').value = q.customer.salesPerson || '';
+            document.getElementById('quoteNotes').value = q.notes || '';
+            document.getElementById('depositAmount').value = q.deposit || 0;
+            
+            selectedItems = q.items.map(i => ({...i, id: Date.now() + Math.random()}));
+            renderItems();
+            calculate();
+            switchScreen('new');
+            alert('已載入報價資料，您可以編輯後重新儲存！');
+        }
+        
+        function exportQuotePDF(idx) {
+            const q = quotes[idx];
+            const {subtotal, tax, total, deposit} = q;
+            const {name, phone, line, vehicle, entryDate, exitDate, salesPerson} = q.customer;
+            const notes = q.notes;
+            const taxRate = q.taxRate;
+            const quoteDate = new Date(q.date).toLocaleDateString('zh-TW');
+            const quoteId = q.id;
+            
+            let itemsHtml = q.items.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td style="text-align:center;">${item.qty}</td>
+                    <td style="text-align:right;">$${(item.price * item.qty).toLocaleString()}</td>
+                </tr>
+            `).join('');
+            
+            const pdfContent = `
+                <div style="font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif; padding: 20px; color: #2c2c2c;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <h1 style="color:#1a3d34;margin:0;">🏕️ 凡構國際實業社</h1>
+                        <p style="color:#666;margin:5px 0;">露營車駐車冷氣 配電專門</p>
+                        <p style="color:#666;margin:5px 0;">📞 0912-678-660 | LINE: @0912678660</p>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin:15px 0;padding:10px;background:#f5f5f5;border-radius:8px;">
+                        <span>📅 日期：${quoteDate}</span>
+                        <span>📋 單號：${quoteId}</span>
+                    </div>
+                    
+                    <div style="padding:15px;background:#fdfbf7;border-radius:8px;margin-bottom:15px;">
+                        <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
+                        <p style="margin:3px 0;">👤 姓名：${name}</p>
+                        <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
+                        ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
+                        ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
+                        ${entryDate ? `<p style="margin:3px 0;">📅 進廠日期：${entryDate}</p>` : ''}
+                        ${exitDate ? `<p style="margin:3px 0;">🚗 出廠日期：${exitDate}</p>` : ''}
+                    </div>
+                    
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:15px;">
+                        <thead>
+                            <tr style="background:#1a3d34;color:white;">
+                                <th style="padding:10px;text-align:left;">項目</th>
+                                <th style="padding:10px;text-align:center;">數量</th>
+                                <th style="padding:10px;text-align:right;">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div style="text-align:right;padding:15px;background:#1a3d34;color:white;border-radius:8px;">
+                        <div style="margin:5px 0;">小計：$${subtotal.toLocaleString()}</div>
+                        <div style="margin:5px 0;">稅金 (${taxRate}%)：$${tax.toLocaleString()}</div>
+                        <div style="font-size:20px;font-weight:bold;margin-top:10px;">總計：$${total.toLocaleString()}</div>
+                        ${deposit > 0 ? `
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💵 訂金：$${deposit.toLocaleString()}</div>
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💳 尚欠：$${(total-deposit).toLocaleString()}</div>
+                        ` : ''}
+                    </div>
+                    
+                    ${notes ? `
+                    <div style="margin-top:15px;padding:15px;background:#fff9e6;border-radius:8px;">
+                        <h4 style="color:#1a3d34;margin:0 0 10px 0;">📝 備註</h4>
+                        <p style="margin:0;">${notes}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="text-align:center;margin-top:30px;color:#999;font-size:12px;">
+                        <p>感謝您的信任！我們會盡快與您聯繫。</p>
+                    </div>
+                </div>
+            `;
+            
+            const opt = {
+                margin: 10,
+                filename: '報價單-' + quoteId + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(pdfContent).save();
+        }
+        
+        function viewQuoteDetail(idx) {
+            const q = quotes[idx];
+            
+            let dateInfo = '';
+            if(q.customer.entryDate || q.customer.exitDate) {
+                dateInfo = '\n📅 進廠：' + (q.customer.entryDate || '未填') + '\n🚗 出廠：' + (q.customer.exitDate || '未填');
+            }
+            
+            let paymentInfo = '';
+            if(q.deposit > 0) {
+                paymentInfo = '\n💵 訂金：$' + q.deposit.toLocaleString() + '\n💳 尚欠：$' + q.balance.toLocaleString();
+            }
+            
+            alert('📋 報價詳情\n\n' +
+                '👤 姓名：' + q.customer.name + '\n' +
+                '📞 電話：' + q.customer.phone + 
+                (q.customer.salesPerson ? '\n👔 業務：' + q.customer.salesPerson : '') +
+                (q.customer.line ? '\n💬 LINE：' + q.customer.line : '') +
+                (q.customer.vehicle ? '\n🚗 車輛：' + q.customer.vehicle : '') +
+                dateInfo +
+                '\n\n📦 項目：\n' + q.items.map(i => '  • ' + i.name + ' x' + i.qty + ' = $' + (i.price * i.qty).toLocaleString()).join('\n') +
+                '\n\n💰 小計：$' + q.subtotal.toLocaleString() +
+                '\n📊 稅金 (' + q.taxRate + '%)：$' + q.tax.toLocaleString() +
+                '\n✨ 總計：$' + q.total.toLocaleString() +
+                paymentInfo +
+                (q.notes ? '\n📝 備註：' + q.notes : '')
+            );
+        }
+        
+        function deleteQuote(index) {
+            if(confirm('確定要刪除這筆報價記錄？')) {
+                quotes.splice(index, 1);
+                localStorage.setItem('vango_quotes', JSON.stringify(quotes));
+                renderQuotes();
+            }
+        }
+        
+        function clearForm() {
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerLine').value = '';
+            document.getElementById('vehicleInfo').value = '';
+            document.getElementById('entryDate').value = '';
+            document.getElementById('exitDate').value = '';
+            document.getElementById('salesPerson').value = '';
+            document.getElementById('quoteNotes').value = '';
+            document.getElementById('depositAmount').value = '0';
+            selectedItems = [];
+            editingQuoteIndex = null;
+            renderItems();
+            calculate();
+        }
+        
+        function addNewService() {
+            const name = document.getElementById('newServiceName').value.trim();
+            const price = parseInt(document.getElementById('newServicePrice').value) || 0;
+            if(name && price > 0) {
+                services.push({name, price});
+                localStorage.setItem('vango_services', JSON.stringify(services));
+                renderServices();
+                renderAllServices();
+                document.getElementById('newServiceName').value = '';
+                document.getElementById('newServicePrice').value = '';
+            }
+        }
+        
+        // 車型快捷鍵功能
+        let presets = JSON.parse(localStorage.getItem('vango_presets')) || [
+            {name:'VW Ocean 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'VW Beach 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Marco Polo', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
+            {name:'Sunlight 600rt', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight 600', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight 601', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight T67s', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
+            {name:'Sunlight T58', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]}
+        ];
+        
+        // 第一次載入時儲存到 localStorage
+        if(!localStorage.getItem('vango_presets')) {
+            localStorage.setItem('vango_presets', JSON.stringify(presets));
+        }
+        
+        function renderPresets() {
+            const container = document.getElementById('presetsList');
+            if(presets.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:10px;">尚無儲存的車型</div>';
+                return;
+            }
+            container.innerHTML = presets.map((p, i) => `
+                <div class="service-list-item">
+                    <span class="service-name">🚗 ${p.name} (${p.items.length}項)</span>
+                    <div>
+                        <button onclick="loadPreset(${i})" style="background:var(--primary);color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">➕</button>
+                        <button onclick="editPreset(${i})" style="background:var(--accent);color:var(--primary);border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:4px;">✏️</button>
+                        <button onclick="deletePreset(${i})" style="background:var(--danger);color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:4px;">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        let editingPresetIndex = null;
+        let presetItems = [];
+        
+        function renderPresetServicesList() {
+            const container = document.getElementById('presetServicesList');
+            container.innerHTML = services.map((s, i) => 
+                `<button onclick="addItemToPreset(${i})" style="background:var(--primary);color:white;border:none;padding:6px 10px;border-radius:15px;cursor:pointer;font-size:11px;margin:3px;white-space:nowrap;">${s.name}</button>`
+            ).join('');
+        }
+        
+        function addItemToPreset(serviceIndex) {
+            const s = services[serviceIndex];
+            presetItems.push({name: s.name, price: s.price});
+            renderPresetItemsList();
+        }
+        
+        function removeItemFromPreset(index) {
+            presetItems.splice(index, 1);
+            renderPresetItemsList();
+        }
+        
+        function renderPresetItemsList() {
+            const container = document.getElementById('presetItemsList');
+            if(presetItems.length === 0) {
+                container.innerHTML = '<p style="font-size:12px;color:#999;text-align:center;padding:10px;">尚無選擇項目，點擊下方服務項目新增</p>';
+                return;
+            }
+            let html = '<div style="background:#f5f5f5;border-radius:8px;padding:10px;margin-bottom:10px;">';
+            html += '<div style="font-size:12px;color:#666;margin-bottom:8px;">已選擇 ' + presetItems.length + ' 項：</div>';
+            html += presetItems.map((item, i) => 
+                `<div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:8px;border-radius:6px;margin-bottom:5px;">
+                    <span>${item.name} - $${item.price.toLocaleString()}</span>
+                    <button onclick="removeItemFromPreset(${i})" style="background:var(--danger);color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">✕</button>
+                </div>`
+            ).join('');
+            html += '<button onclick="presetItems=[];renderPresetItemsList()" style="background:#999;color:white;border:none;padding:8px;width:100%;border-radius:6px;cursor:pointer;margin-top:5px;">🗑️ 清空</button>';
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function editPreset(index) {
+            const p = presets[index];
+            editingPresetIndex = index;
+            presetItems = p.items.map(i => ({name: i.name, price: i.price}));
+            renderPresetItemsList();
+            
+            // 顯示編輯區塊
+            let itemsHtml = '<div style="margin-top:15px;">';
+            p.items.forEach((item, i) => {
+                itemsHtml += `
+                    <div style="display:flex;gap:5px;margin-bottom:8px;align-items:center;">
+                        <input type="text" id="edit-item-name-${i}" value="${item.name}" style="flex:2;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                        <input type="number" id="edit-item-price-${i}" value="${item.price}" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                        <button onclick="removePresetItem(${i})" style="background:var(--danger);color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">✕</button>
+                    </div>
+                `;
+            });
+            itemsHtml += `
+                <button onclick="addPresetItem()" style="background:var(--accent);color:var(--primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;margin-top:5px;">➕ 新增項目</button>
+            </div>`;
+            
+            // 顯示名稱編輯
+            const newName = prompt('編輯車型名稱：', p.name);
+            if(newName === null) return;
+            
+            p.name = newName.trim() || p.name;
+            
+            // 顯示編輯面板
+            const container = document.getElementById('presetsList');
+            container.innerHTML = `
+                <div style="background:var(--primary);color:white;padding:15px;border-radius:8px;margin-bottom:10px;">
+                    <strong>🚗 編輯中：${p.name}</strong>
+                </div>
+                <div style="padding:10px;background:#f5f5f5;border-radius:8px;">
+                    <label style="font-size:12px;color:#666;">項目名稱</label>
+                    <label style="font-size:12px;color:#666;float:right;">金額</label>
+                    ${itemsHtml}
+                    <div style="display:flex;gap:10px;margin-top:15px;">
+                        <button onclick="savePresetEdit()" style="background:var(--primary);color:white;border:none;padding:12px;border-radius:6px;cursor:pointer;flex:1;font-weight:bold;">💾 儲存</button>
+                        <button onclick="cancelPresetEdit()" style="background:#999;color:white;border:none;padding:12px;border-radius:6px;cursor:pointer;flex:1;">✕ 取消</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function removePresetItem(itemIndex) {
+            const p = presets[editingPresetIndex];
+            p.items.splice(itemIndex, 1);
+            editPreset(editingPresetIndex); // 重新渲染
+        }
+        
+        function addPresetItem() {
+            const p = presets[editingPresetIndex];
+            p.items.push({name: '新項目', price: 0});
+            editPreset(editingPresetIndex); // 重新渲染
+        }
+        
+        function savePresetEdit() {
+            const p = presets[editingPresetIndex];
+            // 收集所有編輯的值
+            const newItems = [];
+            p.items.forEach((item, i) => {
+                const name = document.getElementById('edit-item-name-' + i).value.trim();
+                const price = parseInt(document.getElementById('edit-item-price-' + i).value) || 0;
+                if(name) {
+                    newItems.push({name, price});
+                }
+            });
+            p.items = newItems;
+            presetItems = newItems;
+            localStorage.setItem('vango_presets', JSON.stringify(presets));
+            editingPresetIndex = null;
+            renderPresets();
+            renderPresetItemsList();
+            alert('已儲存車型！');
+        }
+        
+        function cancelPresetEdit() {
+            editingPresetIndex = null;
+            presetItems = [];
+            renderPresets();
+            renderPresetItemsList();
+        }
+        
+        function savePreset() {
+            const name = document.getElementById('presetName').value.trim();
+            if(!name) { alert('請輸入車型名稱'); return; }
+            if(presetItems.length === 0) { alert('請先選擇服務項目'); return; }
+            
+            const preset = {
+                name: name,
+                items: presetItems.map(i => ({name: i.name, price: i.price}))
+            };
+            
+            presets.push(preset);
+            localStorage.setItem('vango_presets', JSON.stringify(presets));
+            presetItems = [];
+            renderPresetItemsList();
+            renderPresets();
+            document.getElementById('presetName').value = '';
+            alert('已儲存「' + name + '」快捷鍵！');
+        }
+        
+        function loadPreset(index) {
+            const p = presets[index];
+            selectedItems = p.items.map(i => ({...i, qty: 1, id: Date.now() + Math.random()}));
+            document.getElementById('vehicleInfo').value = p.name;
+            renderItems();
+            calculate();
+            switchScreen('new');
+            alert('已載入「' + p.name + '」的服務項目！');
+        }
+        
+        function deletePreset(index) {
+            presets.splice(index, 1);
+            localStorage.setItem('vango_presets', JSON.stringify(presets));
+            renderPresets();
+        }
+        
+        async function generatePDF() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            if(!name || !phone) { alert('請填寫姓名和電話'); return; }
+            if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
+            
+            const {subtotal, tax, total} = calculate();
+            const line = document.getElementById('customerLine').value.trim();
+            const vehicle = document.getElementById('vehicleInfo').value.trim();
+            const entryDate = document.getElementById('entryDate').value;
+            const exitDate = document.getElementById('exitDate').value;
+            const salesPerson = document.getElementById('salesPerson').value.trim();
+            const notes = document.getElementById('quoteNotes').value.trim();
+            const deposit = parseInt(document.getElementById('depositAmount').value) || 0;
+            
+            const quoteDate = new Date().toLocaleDateString('zh-TW');
+            const quoteId = 'VQ' + Date.now();
+            
+            let itemsHtml = selectedItems.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td style="text-align:center;">${item.qty}</td>
+                    <td style="text-align:right;">$${(item.price * item.qty).toLocaleString()}</td>
+                </tr>
+            `).join('');
+            
+            const pdfContent = `
+                <div style="font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif; padding: 20px; color: #2c2c2c;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <h1 style="color:#1a3d34;margin:0;">🏕️ 凡構國際實業社</h1>
+                        <p style="color:#666;margin:5px 0;">露營車駐車冷氣 配電專門</p>
+                        <p style="color:#666;margin:5px 0;">📞 0912-678-660 | LINE: @0912678660</p>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin:15px 0;padding:10px;background:#f5f5f5;border-radius:8px;">
+                        <span>📅 日期：${quoteDate}</span>
+                        <span>📋 單號：${quoteId}</span>
+                    </div>
+                    
+                    <div style="padding:15px;background:#fdfbf7;border-radius:8px;margin-bottom:15px;">
+                        <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
+                        <p style="margin:3px 0;">👤 姓名：${name}</p>
+                        <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
+                        ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
+                        ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
+                        ${entryDate ? `<p style="margin:3px 0;">📅 進廠日期：${entryDate}</p>` : ''}
+                        ${exitDate ? `<p style="margin:3px 0;">🚗 出廠日期：${exitDate}</p>` : ''}
+                    </div>
+                    
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:15px;">
+                        <thead>
+                            <tr style="background:#1a3d34;color:white;">
+                                <th style="padding:10px;text-align:left;">項目</th>
+                                <th style="padding:10px;text-align:center;">數量</th>
+                                <th style="padding:10px;text-align:right;">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div style="text-align:right;padding:15px;background:#1a3d34;color:white;border-radius:8px;">
+                        <div style="margin:5px 0;">小計：$${subtotal.toLocaleString()}</div>
+                        <div style="margin:5px 0;">稅金 (${taxRate}%)：$${tax.toLocaleString()}</div>
+                        <div style="font-size:20px;font-weight:bold;margin-top:10px;">總計：$${total.toLocaleString()}</div>
+                        ${deposit > 0 ? `
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💵 訂金：$${deposit.toLocaleString()}</div>
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💳 尚欠：$${(total-deposit).toLocaleString()}</div>
+                        ` : ''}
+                    </div>
+                    
+                    ${notes ? `
+                    <div style="margin-top:15px;padding:15px;background:#fff9e6;border-radius:8px;">
+                        <h4 style="color:#1a3d34;margin:0 0 10px 0;">📝 備註</h4>
+                        <p style="margin:0;">${notes}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="text-align:center;margin-top:30px;color:#999;font-size:12px;">
+                        <p>感謝您的信任！我們會盡快與您聯繫。</p>
+                    </div>
+                </div>
+            `;
+            
+            const opt = {
+                margin: 10,
+                filename: '報價單-' + quoteId + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(pdfContent).save();
+        }
+        
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
