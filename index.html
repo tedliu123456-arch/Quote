@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224i';
+        const APP_VERSION = '20250224j';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -356,28 +356,43 @@
         }
         
         function switchScreen(screen) {
+            alert('開始切換: ' + screen);
+            
             try {
                 // 切換畫面時停止相機
                 stopCamera();
                 
-                // 隱藏所有畫面 - 直接用 style.display
-                const allScreens = document.querySelectorAll('.screen');
-                allScreens.forEach(s => {
+                // 取得所有畫面
+                const screens = document.querySelectorAll('.screen');
+                alert('找到畫面數: ' + screens.length);
+                
+                // 隱藏所有畫面
+                screens.forEach(s => {
                     s.style.display = 'none';
                 });
                 
                 // 移除所有 tab 按鈕的 active 狀態
                 document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active'));
                 
-                // 顯示選中的畫面 - 直接用 style.display
+                // 顯示選中的畫面
                 const targetScreen = document.getElementById('screen-' + screen);
+                if (!targetScreen) {
+                    alert('找不到畫面: screen-' + screen);
+                    return;
+                }
                 targetScreen.style.display = 'block';
                 
                 // 選中對應的 tab 按鈕
-                document.getElementById('tab-' + screen).classList.add('active');
+                const tabBtn = document.getElementById('tab-' + screen);
+                if (tabBtn) {
+                    tabBtn.classList.add('active');
+                }
                 
                 // 顯示/隱藏 FAB 按鈕
-                document.getElementById('fab').classList.toggle('show', screen === 'new');
+                const fab = document.getElementById('fab');
+                if (fab) {
+                    fab.classList.toggle('show', screen === 'new');
+                }
                 
                 // 根據畫面執行對應功能
                 if(screen === 'list') {
