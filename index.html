@@ -74,6 +74,8 @@
             background: none; border: none; cursor: pointer;
             transition: all 0.2s; pointer-events: auto;
             -webkit-tap-highlight-color: transparent;
+            z-index: 10000;
+            position: relative;
         }
         
         .nav-item.active { color: var(--primary); }
@@ -287,16 +289,16 @@
     <button class="fab" id="fab" onclick="addNewItem()">+</button>
     
     <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchScreen('new')">
+        <button class="nav-item active" id="nav-new" onclick="switchScreen('new');">
             <span class="nav-icon">📝</span><span>報價</span>
         </button>
-        <button class="nav-item" onclick="switchScreen('list')">
+        <button class="nav-item" id="nav-list" onclick="switchScreen('list');">
             <span class="nav-icon">📋</span><span>列表</span>
         </button>
-        <button class="nav-item" onclick="switchScreen('presets')">
+        <button class="nav-item" id="nav-presets" onclick="switchScreen('presets');">
             <span class="nav-icon">🚗</span><span>車型</span>
         </button>
-        <button class="nav-item" onclick="switchScreen('services')">
+        <button class="nav-item" id="nav-services" onclick="switchScreen('services');">
             <span class="nav-icon">⚙️</span><span>服務</span>
         </button>
     </nav>
@@ -354,12 +356,22 @@
         
         function switchScreen(screen) {
             try {
+                // 隱藏所有畫面
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                
+                // 移除所有導航按鈕的 active 狀態
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                
+                // 顯示選中的畫面
                 document.getElementById('screen-' + screen).classList.add('active');
-                document.querySelector(`[onclick="switchScreen('${screen}')"]`).classList.add('active');
+                
+                // 選中對應的導航按鈕
+                document.getElementById('nav-' + screen).classList.add('active');
+                
+                // 顯示/隱藏 FAB 按鈕
                 document.getElementById('fab').classList.toggle('show', screen === 'new');
                 
+                // 根據畫面執行對應功能
                 if(screen === 'list') {
                     document.getElementById('quoteSearch').value = '';
                     renderQuotes();
@@ -373,8 +385,11 @@
                 if(screen === 'services') {
                     renderUnknownPlates();
                 }
+                
+                console.log('切換到:', screen);
             } catch(e) {
                 console.error('switchScreen error:', e);
+                alert('切換失敗: ' + e.message);
             }
         }
         
