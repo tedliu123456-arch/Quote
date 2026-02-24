@@ -173,6 +173,7 @@
                     <div class="form-group"><label class="form-label">電話</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
                 </div>
                 <div class="form-group"><label class="form-label">LINE ID</label><input type="text" id="customerLine" class="form-input" placeholder="line12345"></div>
+                    <div class="form-group"><label class="form-label">統一編號</label><input type="text" id="customerTaxId" class="form-input" placeholder="12345678"></div>
                 <div class="form-group"><label class="form-label">👤 業務</label><input type="text" id="salesPerson" class="form-input" placeholder="輸入業務姓名"></div>
                 <div class="form-group">
                     <label class="form-label">車輛</label>
@@ -527,7 +528,8 @@
                 date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
                 customer: {
                     name, phone, 
-                    line: document.getElementById('customerLine').value.trim(), 
+                    line: document.getElementById('customerLine').value.trim(),
+                    taxId: document.getElementById('customerTaxId').value.trim(), 
                     vehicle: document.getElementById('vehicleInfo').value.trim(),
                     licensePlate: document.getElementById('licensePlate').value.trim().toUpperCase(),
                     entryDate: document.getElementById('entryDate').value,
@@ -718,6 +720,7 @@
             document.getElementById('customerName').value = q.customer.name || '';
             document.getElementById('customerPhone').value = q.customer.phone || '';
             document.getElementById('customerLine').value = q.customer.line || '';
+            document.getElementById('customerTaxId').value = q.customer.taxId || '';
             document.getElementById('vehicleInfo').value = q.customer.vehicle || '';
             document.getElementById('licensePlate').value = q.customer.licensePlate || '';
             document.getElementById('entryDate').value = q.customer.entryDate || '';
@@ -736,7 +739,7 @@
         function exportQuotePDF(idx) {
             const q = quotes[idx];
             const {subtotal, tax, total, deposit} = q;
-            const {name, phone, line, vehicle, licensePlate, entryDate, exitDate, salesPerson} = q.customer;
+            const {name, phone, line, taxId, vehicle, licensePlate, entryDate, exitDate, salesPerson} = q.customer;
             const notes = q.notes;
             const taxRate = q.taxRate;
             const quoteDate = new Date(q.date).toLocaleDateString('zh-TW');
@@ -767,6 +770,7 @@
                         <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
                         <p style="margin:3px 0;">👤 姓名：${name}</p>
                         <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${taxId ? `<p style="margin:3px 0;">🏢 統一編號：${taxId}</p>` : ''}
                         ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
                         ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
                         ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
@@ -837,6 +841,7 @@
             alert('📋 報價詳情\n\n' +
                 '👤 姓名：' + q.customer.name + '\n' +
                 '📞 電話：' + q.customer.phone + 
+                (q.customer.taxId ? '\n🏢 統一編號：' + q.customer.taxId : '') +
                 (q.customer.salesPerson ? '\n👔 業務：' + q.customer.salesPerson : '') +
                 (q.customer.line ? '\n💬 LINE：' + q.customer.line : '') +
                 (q.customer.vehicle ? '\n🚗 車輛：' + q.customer.vehicle : '') +
@@ -863,6 +868,7 @@
             document.getElementById('customerName').value = '';
             document.getElementById('customerPhone').value = '';
             document.getElementById('customerLine').value = '';
+            document.getElementById('customerTaxId').value = '';
             document.getElementById('vehicleInfo').value = '';
             document.getElementById('licensePlate').value = '';
             document.getElementById('entryDate').value = '';
@@ -1095,6 +1101,7 @@
             
             const {subtotal, tax, total} = calculate();
             const line = document.getElementById('customerLine').value.trim();
+            const taxId = document.getElementById('customerTaxId').value.trim();
             const vehicle = document.getElementById('vehicleInfo').value.trim();
             const entryDate = document.getElementById('entryDate').value;
             const exitDate = document.getElementById('exitDate').value;
@@ -1130,6 +1137,7 @@
                         <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
                         <p style="margin:3px 0;">👤 姓名：${name}</p>
                         <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${taxId ? `<p style="margin:3px 0;">🏢 統一編號：${taxId}</p>` : ''}
                         ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
                         ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
                         ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
