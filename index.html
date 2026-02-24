@@ -1332,7 +1332,7 @@
                             <button onclick="event.stopPropagation();deleteQuote(${realIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
                         </div>
                     </div>
-                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} ${q.customer.licensePlate ? '| 🚗 ' + q.customer.licensePlate : ''} | ${q.customer.phone}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
@@ -1356,7 +1356,7 @@
                             <button onclick="event.stopPropagation();deleteQuote(${idx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
                         </div>
                     </div>
-                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} ${q.customer.licensePlate ? '| 🚗 ' + q.customer.licensePlate : ''} | ${q.customer.phone}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
