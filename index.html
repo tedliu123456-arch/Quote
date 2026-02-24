@@ -617,8 +617,52 @@
             liveResult.innerHTML = '🔄 辨識中...請稍候';
             liveResult.style.background = '#fff3e0';
             
-            // 進行高精度辨識
-            performRecognition(canvas);
+            // 先嘗試 Plate Recognizer API
+            recognizeWithAPI(canvas);
+        }
+        
+        function recognizeWithAPI(canvas) {
+            const liveResult = document.getElementById('livePlateResult');
+            const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            
+            fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image: imageData,
+                    regions: ['tw']
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    // 取得第一個辨識結果
+                    let plate = data.results[0].plate.toUpperCase();
+                    // 格式化車牌
+                    if (plate.length > 4) {
+                        plate = plate.substring(0, plate.length - 4) + '-' + plate.substring(plate.length - 4);
+                    }
+                    
+                    liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + plate + '</span>';
+                    liveResult.style.background = '#e8f5e9';
+                    
+                    document.getElementById('licensePlate').value = plate;
+                    document.getElementById('quoteSearch').value = plate;
+                    filterQuotes();
+                    
+                    liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+                } else {
+                    // API 沒辨識到，使用本地 Tesseract
+                    performRecognition(canvas);
+                }
+            })
+            .catch(err => {
+                console.log('API 錯誤，使用本地辨識');
+                performRecognition(canvas);
+            });
         }
         
         function performRecognition(canvas) {
