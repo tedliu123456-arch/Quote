@@ -146,8 +146,20 @@
 <body>
     <header class="app-header">
         <div class="app-title"></div>
-        <div style="display:flex;align-items:center;gap:10px;"></div>
+        <div style="display:flex;align-items:center;gap:5px;">
+            <button onclick="switchScreen('new')" id="tab-new" class="tab-btn active">📝</button>
+            <button onclick="switchScreen('list')" id="tab-list" class="tab-btn">📋</button>
+            <button onclick="switchScreen('presets')" id="tab-presets" class="tab-btn">🚗</button>
+            <button onclick="switchScreen('services')" id="tab-services" class="tab-btn">⚙️</button>
+        </div>
     </header>
+    
+    <style>
+        .tab-btn {
+            background: none; border: none; font-size: 18px; padding: 8px 12px; cursor: pointer; opacity: 0.5;
+        }
+        .tab-btn.active { opacity: 1; background: var(--accent); border-radius: 8px; }
+    </style>
     
     <script>
         function clearCache() {
@@ -287,21 +299,6 @@
     </div>
     
     <button class="fab" id="fab" onclick="addNewItem()">+</button>
-    
-    <nav class="bottom-nav">
-        <button class="nav-item active" id="nav-new" onclick="switchScreen('new');">
-            <span class="nav-icon">📝</span><span>報價</span>
-        </button>
-        <button class="nav-item" id="nav-list" onclick="switchScreen('list');">
-            <span class="nav-icon">📋</span><span>列表</span>
-        </button>
-        <button class="nav-item" id="nav-presets" onclick="switchScreen('presets');">
-            <span class="nav-icon">🚗</span><span>車型</span>
-        </button>
-        <button class="nav-item" id="nav-services" onclick="switchScreen('services');">
-            <span class="nav-icon">⚙️</span><span>服務</span>
-        </button>
-    </nav>
 
     <script>
         let services = JSON.parse(localStorage.getItem('vango_services')) || [
@@ -359,14 +356,14 @@
                 // 隱藏所有畫面
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 
-                // 移除所有導航按鈕的 active 狀態
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                // 移除所有 tab 按鈕的 active 狀態
+                document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active'));
                 
                 // 顯示選中的畫面
                 document.getElementById('screen-' + screen).classList.add('active');
                 
-                // 選中對應的導航按鈕
-                document.getElementById('nav-' + screen).classList.add('active');
+                // 選中對應的 tab 按鈕
+                document.getElementById('tab-' + screen).classList.add('active');
                 
                 // 顯示/隱藏 FAB 按鈕
                 document.getElementById('fab').classList.toggle('show', screen === 'new');
