@@ -663,7 +663,7 @@
             const apiRequests = [];
             
             imageVersions.forEach(version => {
-                // 台灣
+                // 台灣 (主要)
                 apiRequests.push(
                     fetch('https://api.platerecognizer.com/v1/plate-reader/', {
                         method: 'POST',
@@ -674,37 +674,6 @@
                         body: JSON.stringify({
                             image: version.img,
                             regions: ['tw'],
-                            detect_vehicle: 0
-                        })
-                    }).then(r => r.json())
-                );
-                
-                // 不指定區域
-                apiRequests.push(
-                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            image: version.img,
-                            detect_vehicle: 0
-                        })
-                    }).then(r => r.json())
-                );
-                
-                // 亞洲
-                apiRequests.push(
-                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            image: version.img,
-                            regions: ['tw', 'hk', 'cn'],
                             detect_vehicle: 0
                         })
                     }).then(r => r.json())
