@@ -41,7 +41,15 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         html, body { height: 100%; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background: var(--bg); 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%231a3d3420' text-anchor='middle' dominant-baseline='middle' font-family='serif'%3E凡構%3C/text%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-position: center;
+            color: var(--text); 
+            display: flex; flex-direction: column; overflow: hidden; 
+        }
         
         /* App Header */
         .app-header {
@@ -541,9 +549,17 @@
             if(!name) { alert('請填寫姓名'); return; }
             if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
             
+            // 產生訂單編號: YYYYMMDD + 流水號
+            const now = new Date();
+            const dateStr = now.getFullYear() + 
+                String(now.getMonth() + 1).padStart(2, '0') + 
+                String(now.getDate()).padStart(2, '0');
+            const countToday = quotes.filter(q => String(q.id).startsWith(dateStr)).length + 1;
+            const newId = dateStr + String(countToday).padStart(3, '0');
+            
             const {subtotal, tax, total, deposit, balance} = calculate();
             const quote = {
-                id: editingQuoteIndex !== null ? quotes[editingQuoteIndex].id : 'VQ' + Date.now(),
+                id: editingQuoteIndex !== null ? quotes[editingQuoteIndex].id : newId,
                 date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
                 customer: {
                     name, phone, 
@@ -1817,7 +1833,7 @@
             const deposit = parseInt(document.getElementById('depositAmount').value) || 0;
             
             const quoteDate = new Date().toLocaleDateString('zh-TW');
-            const quoteId = 'VQ' + Date.now();
+            const now = new Date(); const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0'); const quoteId = dateStr + '001';
             
             let itemsHtml = selectedItems.map(item => `
                 <tr>
