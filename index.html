@@ -238,8 +238,8 @@
                 </div>
             </div>
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="processImage(this)">
-            <div id="scanResult" style="display:none;margin:10px;padding:12px;background:#e8f5e9;border-radius:8px;">
-                <div style="font-size:12px;">识别结果：<span id="scannedPlate" style="font-weight:bold;color:var(--primary);"></span></div>
+            <div id="scanResult" style="display:none;margin:10px;padding:15px;background:#e8f5e9;border-radius:8px;border:2px solid var(--primary);">
+                <div style="font-size:16px;font-weight:bold;">📷 辨識結果：<span id="scannedPlate" style="color:var(--primary);"></span></div>
             </div>
             <div id="quotesList"></div>
         </div>
@@ -582,7 +582,9 @@
                     document.getElementById('scannedPlate').textContent = plate || '无法辨识';
                     if (plate) {
                         document.getElementById('quoteSearch').value = plate;
+                        document.getElementById('licensePlate').value = plate;
                         filterQuotes();
+                        alert('📷 辨識結果：' + plate);
                     }
                 }).catch(function(err) {
                     document.getElementById('scannedPlate').textContent = '请手动输入';
