@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224n';
+        const APP_VERSION = '20250224p';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -41,7 +41,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         html, body { height: 100%; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); display: block; overflow: visible; }
+        
+        /* Debug test */
+        * { overflow: visible !important; }
         
         /* App Header */
         .app-header {
@@ -146,6 +149,11 @@
     </style>
 </head>
 <body>
+    <!-- 直接測試按鈕 -->
+    <div style="background:red;padding:20px;text-align:center;">
+        <button onclick="alert('JS正常!')" style="padding:10px 20px;font-size:20px;">測試JS</button>
+    </div>
+    
     <!-- 導航選單 -->
     <div style="padding:10px;background:#f0f0f0;text-align:center;">
         <a href="javascript:switchScreen('new')" style="margin:0 10px;">📝</a>
