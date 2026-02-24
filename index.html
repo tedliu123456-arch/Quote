@@ -593,7 +593,7 @@
             // 停止相機流
             video.pause();
             
-            // 截取畫面
+            // 截取畫面 - 使用最高品質
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
@@ -604,64 +604,101 @@
             
             // 顯示已拍攝的畫面
             const capturedImg = document.createElement('img');
-            capturedImg.src = canvas.toDataURL('image/jpeg', 0.9);
+            capturedImg.src = canvas.toDataURL('image/jpeg', 0.95);
             capturedImg.style.cssText = 'width:100%;max-width:400px;border-radius:10px;border:3px solid var(--primary);';
             
             const videoContainer = document.getElementById('cameraPreview');
             videoContainer.style.display = 'none';
             videoContainer.parentNode.insertBefore(capturedImg, videoContainer);
             
-            liveResult.innerHTML = '🔄 辨識中...請稍候';
+            liveResult.innerHTML = '🔄 增強辨識中...請稍候';
             liveResult.style.background = '#fff3e0';
             
-            // 先嘗試 Plate Recognizer API
+            // 先嘗試 Plate Recognizer API 增強版
             recognizeWithAPI(canvas);
         }
         
         function recognizeWithAPI(canvas) {
             const liveResult = document.getElementById('livePlateResult');
-            liveResult.innerHTML = '🔄 Plate Recognizer API 辨識中...';
+            liveResult.innerHTML = '🔄 Plate Recognizer API 增強辨識中...';
             
-            // 取得 base64 圖片 - 使用高品質
-            const imageData = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+            // 建立多個影像版本進行處理
+            const processImage = (srcCanvas, flip) => {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = srcCanvas.width;
+                tempCanvas.height = srcCanvas.height;
+                
+                if (flip) {
+                    tempCtx.translate(tempCanvas.width, 0);
+                    tempCtx.scale(-1, 1);
+                }
+                tempCtx.drawImage(srcCanvas, 0, 0);
+                
+                return tempCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+            };
             
-            // 嘗試多次 API 請求以提高準確率
+            // 生成影像版本
+            const imageVersions = [
+                { img: processImage(canvas, false), name: '原始' },
+                { img: processImage(canvas, true), name: '翻轉' }
+            ];
+            
+            // API 請求
             const apiRequests = [];
             
-            // 請求1: 標準請求
-            apiRequests.push(
-                fetch('https://api.platerecognizer.com/v1/plate-reader/', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image: imageData,
-                        regions: ['tw'],
-                        detect_vehicle: 0
-                    })
-                }).then(r => r.json())
-            );
-            
-            // 請求2: 不指定區域
-            apiRequests.push(
-                fetch('https://api.platerecognizer.com/v1/plate-reader/', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image: imageData,
-                        detect_vehicle: 0
-                    })
-                }).then(r => r.json())
-            );
+            imageVersions.forEach(version => {
+                // 台灣
+                apiRequests.push(
+                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: version.img,
+                            regions: ['tw'],
+                            detect_vehicle: 0
+                        })
+                    }).then(r => r.json())
+                );
+                
+                // 不指定區域
+                apiRequests.push(
+                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: version.img,
+                            detect_vehicle: 0
+                        })
+                    }).then(r => r.json())
+                );
+                
+                // 亞洲
+                apiRequests.push(
+                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: version.img,
+                            regions: ['tw', 'hk', 'cn'],
+                            detect_vehicle: 0
+                        })
+                    }).then(r => r.json())
+                );
+            });
             
             Promise.all(apiRequests)
             .then(results => {
-                console.log('API 回應:', results);
+                console.log('API 回應數量:', results.length);
                 
                 // 合併所有結果
                 let allCandidates = [];
@@ -698,8 +735,8 @@
                 uniqueCandidates.sort((a, b) => b.score - a.score);
                 
                 if (uniqueCandidates.length > 0) {
-                    // 格式化並顯示候選
-                    let displayCandidates = uniqueCandidates.slice(0, 4).map((c, i) => {
+                    // 格式化並顯示候選 (最多5個)
+                    let displayCandidates = uniqueCandidates.slice(0, 5).map((c, i) => {
                         let formatted = formatPlate(c.clean);
                         return { ...c, formatted };
                     });
