@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224j';
+        const APP_VERSION = '20250224k';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -356,64 +356,20 @@
         }
         
         function switchScreen(screen) {
-            alert('開始切換: ' + screen);
+            // 簡單測試版
+            const screens = document.querySelectorAll('.screen');
+            for(let s of screens) { s.style.display = 'none'; }
             
-            try {
-                // 切換畫面時停止相機
-                stopCamera();
-                
-                // 取得所有畫面
-                const screens = document.querySelectorAll('.screen');
-                alert('找到畫面數: ' + screens.length);
-                
-                // 隱藏所有畫面
-                screens.forEach(s => {
-                    s.style.display = 'none';
-                });
-                
-                // 移除所有 tab 按鈕的 active 狀態
-                document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active'));
-                
-                // 顯示選中的畫面
-                const targetScreen = document.getElementById('screen-' + screen);
-                if (!targetScreen) {
-                    alert('找不到畫面: screen-' + screen);
-                    return;
-                }
-                targetScreen.style.display = 'block';
-                
-                // 選中對應的 tab 按鈕
-                const tabBtn = document.getElementById('tab-' + screen);
-                if (tabBtn) {
-                    tabBtn.classList.add('active');
-                }
-                
-                // 顯示/隱藏 FAB 按鈕
-                const fab = document.getElementById('fab');
-                if (fab) {
-                    fab.classList.toggle('show', screen === 'new');
-                }
-                
-                // 根據畫面執行對應功能
-                if(screen === 'list') {
-                    document.getElementById('quoteSearch').value = '';
-                    renderQuotes();
-                }
-                if(screen === 'presets') { 
-                    presetItems = [];
-                    renderPresetItemsList();
-                    renderPresetServicesList();
-                    renderPresets(); 
-                }
-                if(screen === 'services') {
-                    renderUnknownPlates();
-                }
-                
-                alert('切換完成! 畫面: ' + screen);
-            } catch(e) {
-                console.error('switchScreen error:', e);
-                alert('切換失敗: ' + e.message);
-            }
+            const target = document.getElementById('screen-' + screen);
+            if(target) { target.style.display = 'block'; }
+            
+            const tabs = document.querySelectorAll('.tab-btn');
+            for(let t of tabs) { t.classList.remove('active'); }
+            
+            const tab = document.getElementById('tab-' + screen);
+            if(tab) { tab.classList.add('active'); }
+            
+            alert('切換完成: ' + screen);
         }
         
         function renderUnknownPlates() {
