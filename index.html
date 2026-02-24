@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224m';
+        const APP_VERSION = '20250224n';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -146,6 +146,14 @@
     </style>
 </head>
 <body>
+    <!-- 導航選單 -->
+    <div style="padding:10px;background:#f0f0f0;text-align:center;">
+        <a href="javascript:switchScreen('new')" style="margin:0 10px;">📝</a>
+        <a href="javascript:switchScreen('list')" style="margin:0 10px;">📋</a>
+        <a href="javascript:switchScreen('presets')" style="margin:0 10px;">🚗</a>
+        <a href="javascript:switchScreen('services')" style="margin:0 10px;">⚙️</a>
+    </div>
+    
     <header class="app-header">
         <div class="app-title"></div>
         <div style="display:flex;align-items:center;gap:5px;">
