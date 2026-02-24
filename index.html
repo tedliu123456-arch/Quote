@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a3d34">
-    <meta name="version" content="20250224b">
+    <meta name="version" content="20250224h">
     <title>凡構國際 報價系統</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224g';
+        const APP_VERSION = '20250224h';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -149,10 +149,10 @@
     <header class="app-header">
         <div class="app-title"></div>
         <div style="display:flex;align-items:center;gap:5px;">
-            <button onclick="alert('切換到報價');switchScreen('new')" id="tab-new" class="tab-btn active">📝</button>
-            <button onclick="alert('切換到列表');switchScreen('list')" id="tab-list" class="tab-btn">📋</button>
-            <button onclick="alert('切換到車型');switchScreen('presets')" id="tab-presets" class="tab-btn">🚗</button>
-            <button onclick="alert('切換到服務');switchScreen('services')" id="tab-services" class="tab-btn">⚙️</button>
+            <button onclick="switchScreen('new')" id="tab-new" class="tab-btn active">📝</button>
+            <button onclick="switchScreen('list')" id="tab-list" class="tab-btn">📋</button>
+            <button onclick="switchScreen('presets')" id="tab-presets" class="tab-btn">🚗</button>
+            <button onclick="switchScreen('services')" id="tab-services" class="tab-btn">⚙️</button>
         </div>
     </header>
     
@@ -387,7 +387,7 @@
                     renderUnknownPlates();
                 }
                 
-                console.log('切換到:', screen);
+                alert('切換完成! 畫面: ' + screen);
             } catch(e) {
                 console.error('switchScreen error:', e);
                 alert('切換失敗: ' + e.message);
