@@ -617,8 +617,12 @@
         
         function recognizeWithAPI(canvas) {
             const liveResult = document.getElementById('livePlateResult');
-            const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            liveResult.innerHTML = '🔄 Plate Recognizer API 辨識中...';
             
+            // 取得 base64 圖片
+            const imageData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+            
+            // 使用 Plate Recognizer API
             fetch('https://api.platerecognizer.com/v1/plate-reader/', {
                 method: 'POST',
                 headers: {
@@ -627,34 +631,61 @@
                 },
                 body: JSON.stringify({
                     image: imageData,
-                    regions: ['tw']
+                    regions: ['tw'],  // 台灣
+                    detect_vehicle: 0,
+                    camera: { flipped: false }
                 })
             })
             .then(response => response.json())
             .then(data => {
+                console.log('API 回應:', data);
+                
                 if (data.results && data.results.length > 0) {
-                    // 取得第一個辨識結果
-                    let plate = data.results[0].plate.toUpperCase();
-                    // 格式化車牌
-                    if (plate.length > 4) {
-                        plate = plate.substring(0, plate.length - 4) + '-' + plate.substring(plate.length - 4);
+                    // 取得最高置信度的結果
+                    let bestResult = data.results[0];
+                    let plate = bestResult.plate.toUpperCase();
+                    let confidence = bestResult.score || 0;
+                    
+                    // 格式化車牌 (加入 dash)
+                    let formattedPlate = plate;
+                    // 移除所有非英數字元
+                    plate = plate.replace(/[^A-Z0-9]/g, '');
+                    if (plate.length >= 5) {
+                        if (plate.length <= 4) {
+                            formattedPlate = plate;
+                        } else if (plate.length <= 5) {
+                            formattedPlate = plate.substring(0, 2) + '-' + plate.substring(2);
+                        } else if (plate.length <= 6) {
+                            formattedPlate = plate.substring(0, 3) + '-' + plate.substring(3);
+                        } else {
+                            formattedPlate = plate.substring(0, 3) + '-' + plate.substring(3, 7);
+                        }
                     }
                     
-                    liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + plate + '</span>';
+                    liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + formattedPlate + '</span>';
+                    if (confidence > 0) {
+                        liveResult.innerHTML += '<div style="font-size:12px;color:#666;margin-top:5px;">置信度: ' + (confidence * 100).toFixed(1) + '%</div>';
+                    }
                     liveResult.style.background = '#e8f5e9';
                     
-                    document.getElementById('licensePlate').value = plate;
-                    document.getElementById('quoteSearch').value = plate;
+                    document.getElementById('licensePlate').value = formattedPlate;
+                    document.getElementById('quoteSearch').value = formattedPlate;
                     filterQuotes();
                     
                     liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+                } else if (data.error) {
+                    // API 錯誤
+                    console.log('API 錯誤:', data.error);
+                    performRecognition(canvas);
                 } else {
-                    // API 沒辨識到，使用本地 Tesseract
+                    // API 沒辨識到結果
+                    liveResult.innerHTML = '⚠️ API 未辨識到車牌，嘗試本地辨識...';
                     performRecognition(canvas);
                 }
             })
             .catch(err => {
-                console.log('API 錯誤，使用本地辨識');
+                console.log('API 請求錯誤:', err);
+                liveResult.innerHTML = '⚠️ API 連線失敗，使用本地辨識...';
                 performRecognition(canvas);
             });
         }
