@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224h';
+        const APP_VERSION = '20250224i';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -390,10 +390,9 @@
                     renderUnknownPlates();
                 }
                 
-                alert('切換完成! 畫面: ' + screen);
+                console.log('切換到:', screen);
             } catch(e) {
                 console.error('switchScreen error:', e);
-                alert('切換失敗: ' + e.message);
             }
         }
         
