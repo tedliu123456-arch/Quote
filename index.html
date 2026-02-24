@@ -49,6 +49,8 @@
             color: white; padding: 14px 18px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 15px rgba(26,61,52,0.3);
+            z-index: 999999 !important;
+            position: relative;
         }
         
         .app-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
@@ -156,9 +158,11 @@
     
     <style>
         .tab-btn {
-            background: none; border: none; font-size: 18px; padding: 8px 12px; cursor: pointer; opacity: 0.5;
+            background: none !important; border: none !important; font-size: 18px; padding: 8px 12px; 
+            cursor: pointer !important; opacity: 0.5; pointer-events: auto !important;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-        .tab-btn.active { opacity: 1; background: var(--accent); border-radius: 8px; }
+        .tab-btn.active { opacity: 1; background: var(--accent) !important; border-radius: 8px; }
     </style>
     
     <script>
