@@ -6,22 +6,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a3d34">
-    <meta name="version" content="20250223">
+    <meta name="version" content="20250224h">
     <title>凡構國際 報價系統</title>
-    <link rel="manifest" href="manifest.json?v=20250223">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250223';
+        const APP_VERSION = '20250224h';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
-            // 版本不同，清除舊資料並更新
-            console.log('版本更新:', savedVersion, '->', APP_VERSION);
             localStorage.setItem('vango_version', APP_VERSION);
-            // 不清除使用者資料，只更新版本號
         }
     </script>
     <style>
@@ -51,6 +49,8 @@
             color: white; padding: 14px 18px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 15px rgba(26,61,52,0.3);
+            z-index: 999999 !important;
+            position: relative;
         }
         
         .app-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
@@ -65,15 +65,19 @@
             position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--surface);
             border-top: 1px solid rgba(212,168,83,0.2);
-            display: flex; justify-content: space-around; padding: 10px 0 20px;
+            display: flex !important; justify-content: space-around; padding: 10px 0 20px;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            z-index: 99999 !important;
         }
         
         .nav-item {
-            display: flex; flex-direction: column; align-items: center;
+            display: flex !important; flex-direction: column; align-items: center;
             padding: 8px 20px; color: var(--text-muted); font-size: 11px;
-            background: none; border: none; cursor: pointer;
-            transition: all 0.2s;
+            background: none; border: none; cursor: pointer !important;
+            transition: all 0.2s; pointer-events: auto !important;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 100000 !important;
+            position: relative;
         }
         
         .nav-item.active { color: var(--primary); }
@@ -102,7 +106,7 @@
         
         /* Service Grid */
         .service-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
-        .service-item { padding: 14px 10px; background: var(--bg); border-radius: 14px; cursor: pointer; text-align: center; font-size: 12px; transition: all 0.2s; border: 2px solid transparent; }
+        .service-item { padding: 14px 10px; background: var(--bg); border-radius: 14px; cursor: pointer; text-align: center; font-size: 12px; transition: all 0.2s; border: 2px solid transparent; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
         .service-item:active { background: var(--accent); transform: scale(0.98); }
         
         /* Items */
@@ -128,11 +132,11 @@
         .empty-icon { font-size: 48px; margin-bottom: 12px; }
         
         /* FAB */
-        .fab { position: fixed; bottom: 90px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: var(--primary); font-size: 28px; border: none; box-shadow: 0 6px 20px rgba(212,168,83,0.4); cursor: pointer; display: none; align-items: center; justify-content: center; }
+        .fab { position: fixed; bottom: 90px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: var(--primary); font-size: 28px; border: none; box-shadow: 0 6px 20px rgba(212,168,83,0.4); cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 9998; }
         .fab.show { display: flex; }
         
         /* Screen */
-        .screen { display: none; }
+        .screen { display: none; z-index: 1; position: relative; }
         .screen.active { display: block; }
         
         /* Services List */
@@ -143,12 +147,23 @@
 </head>
 <body>
     <header class="app-header">
-        <div class="app-title"><img src="icon.png" alt="V" style="width:28px;height:28px;border-radius:6px;"><span style="margin-left:8px;">凡構報價</span></div>
-        <div style="display:flex;align-items:center;gap:10px;">
-            <div class="app-phone">📞 0912-678-660</div>
-            <button onclick="clearCache()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;">🔄</button>
+        <div class="app-title"></div>
+        <div style="display:flex;align-items:center;gap:5px;">
+            <button onclick="switchScreen('new')" id="tab-new" class="tab-btn active">📝</button>
+            <button onclick="switchScreen('list')" id="tab-list" class="tab-btn">📋</button>
+            <button onclick="switchScreen('presets')" id="tab-presets" class="tab-btn">🚗</button>
+            <button onclick="switchScreen('services')" id="tab-services" class="tab-btn">⚙️</button>
         </div>
     </header>
+    
+    <style>
+        .tab-btn {
+            background: none !important; border: none !important; font-size: 18px; padding: 8px 12px; 
+            cursor: pointer !important; opacity: 0.5; pointer-events: auto !important;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        .tab-btn.active { opacity: 1; background: var(--accent) !important; border-radius: 8px; }
+    </style>
     
     <script>
         function clearCache() {
@@ -162,9 +177,6 @@
     <div class="app-content">
         <!-- New Quote -->
         <div id="screen-new" class="screen active">
-            <div style="text-align:center;padding:10px 0 20px;">
-                <img src="icon.png" alt="VANGO" style="width:80px;height:80px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-            </div>
             <div class="card">
                 <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
                 <div class="form-row">
@@ -172,6 +184,7 @@
                     <div class="form-group"><label class="form-label">電話</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
                 </div>
                 <div class="form-group"><label class="form-label">LINE ID</label><input type="text" id="customerLine" class="form-input" placeholder="line12345"></div>
+                    <div class="form-group"><label class="form-label">統一編號</label><input type="text" id="customerTaxId" class="form-input" placeholder="12345678"></div>
                 <div class="form-group"><label class="form-label">👤 業務</label><input type="text" id="salesPerson" class="form-input" placeholder="輸入業務姓名"></div>
                 <div class="form-group">
                     <label class="form-label">車輛</label>
@@ -181,6 +194,10 @@
                             <option value="">🚗 快捷鍵</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🚗 車牌號碼</label>
+                    <input type="text" id="licensePlate" class="form-input" placeholder="例如：ABC-1234" style="text-transform:uppercase;">
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
@@ -226,7 +243,15 @@
         <!-- List -->
         <div id="screen-list" class="screen">
             <div class="card" style="margin-bottom:10px;">
-                <input type="text" id="quoteSearch" class="form-input" placeholder="🔍 搜尋姓名、電話或車型..." oninput="filterQuotes()">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="quoteSearch" class="form-input" placeholder="搜尋姓名、電話、车牌或车型..." oninput="filterQuotes()" onkeypress="if(event.key==='Enter'){filterQuotes()}" style="flex:1;">
+                    <button onclick="filterQuotes()" style="background:var(--accent);color:var(--primary);border:none;padding:12px 16px;border-radius:12px;font-size:18px;cursor:pointer;">🔍</button>
+                    <button onclick="scanLicensePlate()" style="background:var(--primary);color:white;border:none;padding:12px 16px;border-radius:12px;font-size:18px;cursor:pointer;">📷</button>
+                </div>
+            </div>
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="processImage(this)">
+            <div id="scanResult" style="display:none;margin:10px;padding:15px;background:#fff;border-radius:8px;border:2px solid var(--primary);">
+                <div style="font-size:16px;font-weight:bold;">📷 辨識結果：<span id="scannedPlate" style="color:var(--primary);"></span></div>
             </div>
             <div id="quotesList"></div>
         </div>
@@ -238,6 +263,12 @@
                 <div class="form-group"><label class="form-label">營業稅 (%)</label><input type="number" id="taxRate" class="form-input" placeholder="5" value="5"></div>
                 <button class="btn btn-primary btn-block" onclick="saveSettings()">儲存設定</button>
             </div>
+            
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">📷 車牌資料庫</div>
+                <div id="unknownPlatesList" style="max-height:200px;overflow-y:auto;"></div>
+            </div>
+            
             <div class="card">
                 <div class="card-title" style="margin-bottom:14px;">➕ 新增服務</div>
                 <div class="form-group"><input type="text" id="newServiceName" class="form-input" placeholder="服務名稱"></div>
@@ -272,21 +303,6 @@
     </div>
     
     <button class="fab" id="fab" onclick="addNewItem()">+</button>
-    
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchScreen('new')">
-            <span class="nav-icon">📝</span><span>報價</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('list')">
-            <span class="nav-icon">📋</span><span>列表</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('presets')">
-            <span class="nav-icon">🚗</span><span>車型</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('services')">
-            <span class="nav-icon">⚙️</span><span>服務</span>
-        </button>
-    </nav>
 
     <script>
         let services = JSON.parse(localStorage.getItem('vango_services')) || [
@@ -299,12 +315,16 @@
         let taxRate = parseFloat(localStorage.getItem('vango_taxRate')) || 5;
         
         document.addEventListener('DOMContentLoaded', () => { 
-            renderServices(); 
-            renderAllServices(); 
-            renderQuotes();
-            renderPresets();
-            renderVehiclePresets();
-            document.getElementById('taxRate').value = taxRate;
+            try {
+                renderServices(); 
+                renderAllServices(); 
+                renderQuotes();
+                renderPresets();
+                renderVehiclePresets();
+                document.getElementById('taxRate').value = taxRate;
+            } catch(e) {
+                console.error('Init error:', e);
+            }
         });
         
         function renderVehiclePresets() {
@@ -336,20 +356,70 @@
         }
         
         function switchScreen(screen) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('screen-' + screen).classList.add('active');
-            document.querySelector(`[onclick="switchScreen('${screen}')"]`).classList.add('active');
-            document.getElementById('fab').classList.toggle('show', screen === 'new');
-            if(screen === 'list') {
-                document.getElementById('quoteSearch').value = '';
-                renderQuotes();
+            try {
+                // 切換畫面時停止相機
+                stopCamera();
+                
+                // 隱藏所有畫面
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                
+                // 移除所有 tab 按鈕的 active 狀態
+                document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active'));
+                
+                // 顯示選中的畫面
+                document.getElementById('screen-' + screen).classList.add('active');
+                
+                // 選中對應的 tab 按鈕
+                document.getElementById('tab-' + screen).classList.add('active');
+                
+                // 顯示/隱藏 FAB 按鈕
+                document.getElementById('fab').classList.toggle('show', screen === 'new');
+                
+                // 根據畫面執行對應功能
+                if(screen === 'list') {
+                    document.getElementById('quoteSearch').value = '';
+                    renderQuotes();
+                }
+                if(screen === 'presets') { 
+                    presetItems = [];
+                    renderPresetItemsList();
+                    renderPresetServicesList();
+                    renderPresets(); 
+                }
+                if(screen === 'services') {
+                    renderUnknownPlates();
+                }
+                
+                alert('切換完成! 畫面: ' + screen);
+            } catch(e) {
+                console.error('switchScreen error:', e);
+                alert('切換失敗: ' + e.message);
             }
-            if(screen === 'presets') { 
-                presetItems = [];
-                renderPresetItemsList();
-                renderPresetServicesList();
-                renderPresets(); 
+        }
+        
+        function renderUnknownPlates() {
+            const container = document.getElementById('unknownPlatesList');
+            const plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+            
+            if(plates.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:10px;">尚無資料</div>';
+                return;
+            }
+            
+            container.innerHTML = plates.map((p, i) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+                    <span style="font-weight:bold;font-size:14px;">🚗 ${p.plate}</span>
+                    <button onclick="deleteUnknownPlate(${i})" style="background:var(--danger);color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">🗑️</button>
+                </div>
+            `).join('');
+        }
+        
+        function deleteUnknownPlate(index) {
+            if(confirm('確定要刪除？')) {
+                let plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+                plates.splice(index, 1);
+                localStorage.setItem('vango_unknown_plates', JSON.stringify(plates));
+                renderUnknownPlates();
             }
         }
         
@@ -471,8 +541,10 @@
                 date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
                 customer: {
                     name, phone, 
-                    line: document.getElementById('customerLine').value.trim(), 
+                    line: document.getElementById('customerLine').value.trim(),
+                    taxId: document.getElementById('customerTaxId').value.trim(), 
                     vehicle: document.getElementById('vehicleInfo').value.trim(),
+                    licensePlate: document.getElementById('licensePlate').value.trim().toUpperCase(),
                     entryDate: document.getElementById('entryDate').value,
                     exitDate: document.getElementById('exitDate').value,
                     salesPerson: document.getElementById('salesPerson').value.trim()
@@ -497,8 +569,764 @@
             switchScreen('list');
         }
         
+        // ===== 車牌辨識功能 =====
+        let currentScannedPlate = '';
+        let videoStream = null;
+        let capturedCanvas = null;
+        
+        function scanLicensePlate() {
+            // 停止之前的相機
+            stopCamera();
+            
+            const scanResult = document.getElementById('scanResult');
+            scanResult.style.display = 'block';
+            scanResult.innerHTML = '<div style="text-align:center;padding:20px;"><div style="font-size:14px;margin-bottom:10px;">📷 請將車牌對準下方方框中央</div><div style="position:relative;display:inline-block;width:100%;max-width:400px;"><video id="cameraPreview" autoplay playsinline style="width:100%;border-radius:10px;cursor:pointer;" onclick="captureAndRecognize()"></video><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70%;height:30%;border:3px dashed #fff;background:rgba(255,255,255,0.1);border-radius:10px;pointer-events:none;"><div style="position:absolute;bottom:-30px;left:0;width:100%;text-align:center;color:#fff;font-size:12px;">車牌放置此處</div></div></div><div id="livePlateResult" style="margin-top:30px;padding:15px;background:#fff3e0;border-radius:10px;font-size:16px;font-weight:bold;color:var(--primary);">👆 點擊畫面拍照辨識</div><div style="margin-top:15px;"><button onclick="stopCamera()" style="background:#666;color:white;border:none;padding:12px 20px;border-radius:10px;font-size:14px;cursor:pointer;">關閉</button></div></div>';
+            
+            const video = document.getElementById('cameraPreview');
+            
+            // 啟動相機
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                } 
+            }).then(stream => {
+                videoStream = stream;
+                video.srcObject = stream;
+            }).catch(err => {
+                console.error('相機錯誤:', err);
+                scanResult.innerHTML = '<div style="color:red;padding:20px;">無法啟動相機，請確認相機權限</div>';
+            });
+        }
+        
+        function captureAndRecognize() {
+            const video = document.getElementById('cameraPreview');
+            const liveResult = document.getElementById('livePlateResult');
+            
+            if (!videoStream || !video.videoWidth) {
+                alert('相機尚未準備好');
+                return;
+            }
+            
+            // 停止相機流
+            video.pause();
+            
+            // 截取畫面 - 使用最高品質
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            capturedCanvas = canvas;
+            
+            // 顯示已拍攝的畫面
+            const capturedImg = document.createElement('img');
+            capturedImg.src = canvas.toDataURL('image/jpeg', 0.95);
+            capturedImg.style.cssText = 'width:100%;max-width:400px;border-radius:10px;border:3px solid var(--primary);';
+            
+            const videoContainer = document.getElementById('cameraPreview');
+            videoContainer.style.display = 'none';
+            videoContainer.parentNode.insertBefore(capturedImg, videoContainer);
+            
+            liveResult.innerHTML = '🔄 增強辨識中...請稍候';
+            liveResult.style.background = '#fff3e0';
+            
+            // 先嘗試 Plate Recognizer API 增強版
+            recognizeWithAPI(canvas);
+        }
+        
+        function recognizeWithAPI(canvas) {
+            const liveResult = document.getElementById('livePlateResult');
+            liveResult.innerHTML = '🔄 Plate Recognizer API 增強辨識中...';
+            
+            // 建立多個影像版本進行處理
+            const processImage = (srcCanvas, flip) => {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = srcCanvas.width;
+                tempCanvas.height = srcCanvas.height;
+                
+                if (flip) {
+                    tempCtx.translate(tempCanvas.width, 0);
+                    tempCtx.scale(-1, 1);
+                }
+                tempCtx.drawImage(srcCanvas, 0, 0);
+                
+                return tempCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+            };
+            
+            // 生成影像版本
+            const imageVersions = [
+                { img: processImage(canvas, false), name: '原始' },
+                { img: processImage(canvas, true), name: '翻轉' }
+            ];
+            
+            // API 請求
+            const apiRequests = [];
+            
+            imageVersions.forEach(version => {
+                // 台灣 (主要)
+                apiRequests.push(
+                    fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: version.img,
+                            regions: ['tw'],
+                            detect_vehicle: 0
+                        })
+                    }).then(r => r.json())
+                );
+            });
+            
+            Promise.all(apiRequests)
+            .then(results => {
+                console.log('API 回應數量:', results.length);
+                
+                // 合併所有結果
+                let allCandidates = [];
+                
+                results.forEach(data => {
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(result => {
+                            allCandidates.push({
+                                plate: result.plate.toUpperCase(),
+                                score: result.score || 0,
+                                box: result.box
+                            });
+                        });
+                    }
+                });
+                
+                // 去重並排序
+                let uniqueCandidates = [];
+                let seen = new Set();
+                
+                allCandidates.forEach(c => {
+                    let cleanPlate = c.plate.replace(/[^A-Z0-9]/g, '');
+                    if (!seen.has(cleanPlate) && cleanPlate.length >= 4) {
+                        seen.add(cleanPlate);
+                        uniqueCandidates.push({
+                            original: c.plate,
+                            clean: cleanPlate,
+                            score: c.score
+                        });
+                    }
+                });
+                
+                // 按置信度排序
+                uniqueCandidates.sort((a, b) => b.score - a.score);
+                
+                if (uniqueCandidates.length > 0) {
+                    // 格式化並顯示候選 (最多5個)
+                    let displayCandidates = uniqueCandidates.slice(0, 5).map((c, i) => {
+                        let formatted = formatPlate(c.clean);
+                        return { ...c, formatted };
+                    });
+                    
+                    showPlateCandidates(displayCandidates);
+                } else {
+                    // API 沒結果，使用本地辨識
+                    performRecognition(canvas);
+                }
+            })
+            .catch(err => {
+                console.log('API 請求錯誤:', err);
+                performRecognition(canvas);
+            });
+        }
+        
+        function formatPlate(plate) {
+            // 格式化車牌
+            plate = plate.replace(/[^A-Z0-9]/g, '');
+            if (plate.length >= 5) {
+                if (plate.length <= 4) {
+                    return plate;
+                } else if (plate.length <= 5) {
+                    return plate.substring(0, 2) + '-' + plate.substring(2);
+                } else if (plate.length <= 6) {
+                    return plate.substring(0, 3) + '-' + plate.substring(3);
+                } else {
+                    return plate.substring(0, 3) + '-' + plate.substring(3, 7);
+                }
+            }
+            return plate;
+        }
+        
+        function showPlateCandidates(candidates) {
+            const liveResult = document.getElementById('livePlateResult');
+            
+            if (candidates.length === 1) {
+                // 只有一個結果
+                let c = candidates[0];
+                liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + c.formatted + '</span>';
+                if (c.score > 0) {
+                    liveResult.innerHTML += '<div style="font-size:12px;color:#666;margin-top:5px;">置信度: ' + (c.score * 100).toFixed(1) + '%</div>';
+                }
+                liveResult.style.background = '#e8f5e9';
+                
+                document.getElementById('licensePlate').value = c.formatted;
+                document.getElementById('quoteSearch').value = c.formatted;
+                filterQuotes();
+                
+                liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+            } else {
+                // 多個候選
+                let optionsHtml = candidates.map((c, i) => 
+                    `<button onclick="selectPlate('${c.formatted}')" style="margin:5px;padding:12px 20px;background:${i===0?'#4CAF50':'#fff'};color:${i===0?'white':'#333'};border:2px solid #ddd;border-radius:8px;font-size:16px;cursor:pointer;">${c.formatted} <span style="font-size:12px;">(${(c.score*100).toFixed(0)}%)</span></button>`
+                ).join('');
+                
+                liveResult.innerHTML = '🚗 請選擇正確的車牌：<div style="margin-top:15px;">' + optionsHtml + '</div><div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button></div>';
+                liveResult.style.background = '#fff3e0';
+                
+                // 預設選擇第一個
+                document.getElementById('licensePlate').value = candidates[0].formatted;
+                document.getElementById('quoteSearch').value = candidates[0].formatted;
+                filterQuotes();
+            }
+        }
+                            }
+                        }
+                        
+                        liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + formattedPlate + '</span>';
+                        if (confidence > 0) {
+                            liveResult.innerHTML += '<div style="font-size:12px;color:#666;margin-top:5px;">置信度: ' + (confidence * 100).toFixed(1) + '%</div>';
+                        }
+                        liveResult.style.background = '#e8f5e9';
+                        
+                        document.getElementById('licensePlate').value = formattedPlate;
+                        document.getElementById('quoteSearch').value = formattedPlate;
+                        filterQuotes();
+                        
+                        liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+                    }
+                } else if (data.error) {
+                    // API 錯誤
+                    console.log('API 錯誤:', data.error);
+                    performRecognition(canvas);
+                } else {
+                    // API 沒辨識到結果
+                    liveResult.innerHTML = '⚠️ API 未辨識到車牌，嘗試本地辨識...';
+                    performRecognition(canvas);
+                }
+            })
+            .catch(err => {
+                console.log('API 請求錯誤:', err);
+                liveResult.innerHTML = '⚠️ API 連線失敗，使用本地辨識...';
+                performRecognition(canvas);
+            });
+        }
+        
+        function performRecognition(canvas) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 車牌區域預設在中間
+            const plateRegion = {
+                x: width * 0.2,
+                y: height * 0.3,
+                w: width * 0.6,
+                h: height * 0.25
+            };
+            
+            // 解析車牌
+            const parsePlate = (text) => {
+                let cleaned = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                // 限制最多8碼
+                if (cleaned.length > 8) cleaned = cleaned.substring(0, 8);
+                
+                // 台灣車牌格式
+                const patterns = [
+                    /^([A-Z]{2,3})(\d{3,4})$/,  // ABC-1234 或 AB-1234
+                    /^(\d{3,4})([A-Z]{2,3})$/,  // 1234-ABC
+                    /^([A-Z])(\d{4})$/,        // A-1234
+                    /^(\d{4})([A-Z])$/,        // 1234-A
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = cleaned.match(pattern);
+                    if (match) {
+                        return match[1] + '-' + match[2];
+                    }
+                }
+                
+                // 沒有匹配到格式，直接格式化
+                if (cleaned.length >= 5) {
+                    if (cleaned.length <= 4) {
+                        return cleaned;
+                    } else if (cleaned.length <= 6) {
+                        return cleaned.substring(0, cleaned.length - 3) + '-' + cleaned.substring(cleaned.length - 3);
+                    } else {
+                        return cleaned.substring(0, 3) + '-' + cleaned.substring(3, 7);
+                    }
+                }
+                return cleaned;
+            };
+            
+            // 影像預處理
+            const preprocessImage = (imgData, contrast, brightness) => {
+                const data = imgData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    const adjusted = ((gray - 128) * contrast) + 128 + brightness;
+                    const val = Math.max(0, Math.min(255, adjusted));
+                    data[i] = data[i + 1] = data[i + 2] = val;
+                }
+            };
+            
+            // 建立多個預處理版本
+            const processVersions = [];
+            
+            // 原始
+            let imgData = ctx.getImageData(0, 0, width, height);
+            processVersions.push({ data: imgData, name: 'original' });
+            
+            // 高對比
+            imgData = ctx.getImageData(plateRegion.x, plateRegion.y, plateRegion.w, plateRegion.h);
+            preprocessImage(imgData, 2.0, 0);
+            processVersions.push({ data: imgData, name: 'highContrast' });
+            
+            // 明亮
+            imgData = ctx.getImageData(plateRegion.x, plateRegion.y, plateRegion.w, plateRegion.h);
+            preprocessImage(imgData, 1.5, 30);
+            processVersions.push({ data: imgData, name: 'bright' });
+            
+            // 二值化
+            imgData = ctx.getImageData(plateRegion.x, plateRegion.y, plateRegion.w, plateRegion.h);
+            preprocessImage(imgData, 2.5, -30);
+            processVersions.push({ data: imgData, name: 'binary' });
+            
+            // 裁剪車牌區域
+            const cropPlateRegion = (fullCanvas, region) => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = region.w;
+                tempCanvas.height = region.h;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(fullCanvas, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
+                return tempCanvas.toDataURL('image/jpeg', 0.9);
+            };
+            
+            // 進行多次辨識
+            const recognitionPromises = [];
+            
+            for (const version of processVersions) {
+                // 裁剪車牌區域
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = plateRegion.w;
+                tempCanvas.height = plateRegion.h;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(version.data, 0, 0);
+                const croppedUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
+                
+                // 全畫面辨識
+                recognitionPromises.push(
+                    Tesseract.recognize(croppedUrl, 'eng', {
+                        logger: m => {},
+                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                        tessedit_pageseg_mode: '6'
+                    })
+                );
+            }
+            
+            // 全畫面辨識
+            recognitionPromises.push(
+                Tesseract.recognize(canvas.toDataURL('image/jpeg', 0.8), 'eng', {
+                    logger: m => {},
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                    tessedit_pageseg_mode: '3'
+                })
+            );
+            
+            Promise.all(recognitionPromises).then(results => {
+                let bestPlate = '';
+                let bestConfidence = 0;
+                
+                for (const result of results) {
+                    const text = result.data.text;
+                    const plate = parsePlate(text);
+                    
+                    // 修正常見OCR錯誤
+                    let corrected = plate
+                        .replace(/O/g, '0').replace(/Q/g, '0')
+                        .replace(/Z/g, '2').replace(/S/g, '5')
+                        .replace(/B/g, '8').replace(/I/g, '1')
+                        .replace(/L/g, '1').replace(/U/g, '0')
+                        .replace(/D/g, '0').replace(/G/g, '6')
+                        .replace(/T/g, '7').replace(/Y/g, '7')
+                        .replace(/K/g, '8');
+                    
+                    // 限制長度
+                    corrected = corrected.replace(/[^A-Z0-9\-]/g, '');
+                    if (corrected.length > 8) corrected = corrected.substring(0, 8);
+                    
+                    const confidence = result.data.confidence;
+                    
+                    if (corrected.length >= 5 && confidence > bestConfidence) {
+                        bestConfidence = confidence;
+                        bestPlate = corrected;
+                    }
+                }
+                
+                const liveResult = document.getElementById('livePlateResult');
+                
+                if (bestPlate && bestPlate.length >= 5) {
+                    liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + bestPlate + '</span>';
+                    liveResult.style.background = '#e8f5e9';
+                    
+                    // 自動填入
+                    document.getElementById('licensePlate').value = bestPlate;
+                    document.getElementById('quoteSearch').value = bestPlate;
+                    filterQuotes();
+                    
+                    // 顯示重新拍照按鈕
+                    liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+                } else {
+                    liveResult.innerHTML = '⚠️ 辨識失敗<br><span style="font-size:14px;">請重新拍攝或手動輸入</span>';
+                    liveResult.style.background = '#ffebee';
+                    liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button></div>';
+                }
+                
+            }).catch(err => {
+                const liveResult = document.getElementById('livePlateResult');
+                liveResult.innerHTML = '⚠️ 辨識錯誤，請重新拍攝';
+                liveResult.style.background = '#ffebee';
+                liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button></div>';
+            });
+        }
+        
+        function retakePhoto() {
+            const video = document.getElementById('cameraPreview');
+            const capturedImg = video.previousElementSibling;
+            if (capturedImg && capturedImg.tagName === 'IMG') {
+                capturedImg.remove();
+            }
+            video.style.display = 'block';
+            video.play();
+            
+            const liveResult = document.getElementById('livePlateResult');
+            liveResult.innerHTML = '👆 點擊畫面拍照辨識';
+            liveResult.style.background = '#fff3e0';
+        }
+        
+        function selectPlate(plate) {
+            document.getElementById('licensePlate').value = plate;
+            document.getElementById('quoteSearch').value = plate;
+            filterQuotes();
+            
+            const liveResult = document.getElementById('livePlateResult');
+            liveResult.innerHTML = '✅ 已選擇：<span style="font-size:24px;">' + plate + '</span>';
+            liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+            liveResult.style.background = '#e8f5e9';
+        }
+        
+        function confirmPlate() {
+            const plate = document.getElementById('licensePlate').value;
+            if (plate) {
+                alert('✅ 車牌已確認：' + plate);
+                stopCamera();
+            }
+        }
+        
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            const scanResult = document.getElementById('scanResult');
+            scanResult.style.display = 'none';
+            scanResult.innerHTML = '';
+        }
+        
+        function processImage(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            // 預處理
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const contrast = 2.0;
+                const adjusted = ((gray - 128) * contrast) + 128;
+                const val = Math.max(0, Math.min(255, adjusted));
+                data[i] = data[i + 1] = data[i + 2] = val;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // 進行高精確度辨識
+            document.getElementById('livePlateResult').textContent = '🔄 最終辨識中...';
+            
+            Promise.all([
+                Tesseract.recognize(dataUrl, 'eng', { tessedit_pageseg_mode: '6' }),
+                Tesseract.recognize(canvas.toDataURL('image/jpeg', 0.7), 'eng', { tessedit_pageseg_mode: '3' })
+            ]).then(results => {
+                const parsePlate = (text) => {
+                    let cleaned = text.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                    const patterns = [
+                        /([A-Z]{1,3})[\-\s]*([0-9]{3,4})/,
+                        /([0-9]{3,4})[\-\s]*([A-Z]{1,3})/,
+                    ];
+                    for (const pattern of patterns) {
+                        const match = cleaned.match(pattern);
+                        if (match) {
+                            let plate = match[1] + '-' + match[2];
+                            plate = plate.replace(/O/g, '0').replace(/Q/g, '0')
+                                         .replace(/Z/g, '2').replace(/S/g, '5')
+                                         .replace(/B/g, '8').replace(/I/g, '1')
+                                         .replace(/L/g, '1').replace(/U/g, '0');
+                            return plate;
+                        }
+                    }
+                    return cleaned;
+                };
+                
+                let bestPlate = '';
+                for (const result of results) {
+                    const plate = parsePlate(result.data.text);
+                    if (plate && plate.length >= 5) {
+                        bestPlate = plate;
+                        break;
+                    }
+                }
+                
+                stopCamera();
+                
+                if (bestPlate && bestPlate.length >= 5) {
+                    document.getElementById('licensePlate').value = bestPlate;
+                    document.getElementById('quoteSearch').value = bestPlate;
+                    filterQuotes();
+                    alert('📷 辨識成功：' + bestPlate);
+                } else {
+                    alert('⚠️ 辨識失敗，請手動輸入');
+                }
+            });
+        }
+        
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            const scanResult = document.getElementById('scanResult');
+            scanResult.style.display = 'none';
+            scanResult.innerHTML = '';
+        }
+        
+        function processImage(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('scanResult').style.display = 'block';
+                document.getElementById('scannedPlate').textContent = '辨识中...';
+                
+                const img = new Image();
+                img.onload = function() {
+                    // 建立多個處理後的影像進行辨識
+                    const processImage = (processedDataUrl, label) => {
+                        return Tesseract.recognize(processedDataUrl, 'eng', {
+                            logger: m => {},
+                            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+                            tessedit_pageseg_mode: '6'  // 單一文字區塊模式
+                        });
+                    };
+                    
+                    // 影像預處理函數
+                    const preprocessImage = (ctx, width, height, contrast, brightness) => {
+                        const imageData = ctx.getImageData(0, 0, width, height);
+                        const data = imageData.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                            // 轉灰階
+                            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                            // 調整亮度和對比
+                            const adjusted = ((gray - 128) * contrast) + 128 + brightness;
+                            const val = Math.max(0, Math.min(255, adjusted));
+                            data[i] = data[i + 1] = data[i + 2] = val;
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                    };
+                    
+                    // 解析車牌文字
+                    const parsePlate = (text) => {
+                        let cleaned = text.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+                        
+                        // 台灣車牌格式: ABC-1234 或 1234-ABC 或 AB-1234
+                        const patterns = [
+                            /([A-Z]{1,3})[\-\s]*([0-9]{3,4})/,  // ABC-1234 或 AB-1234
+                            /([0-9]{3,4})[\-\s]*([A-Z]{1,3})/,  // 1234-ABC
+                            /([A-Z]{2})[\-\s]*([0-9]{4})/,      // AB-1234
+                        ];
+                        
+                        for (const pattern of patterns) {
+                            const match = cleaned.match(pattern);
+                            if (match) {
+                                let plate = match[1] + '-' + match[2];
+                                // 修正常見OCR錯誤
+                                plate = plate
+                                    .replace(/O/g, '0').replace(/Q/g, '0')
+                                    .replace(/Z/g, '2').replace(/S/g, '5')
+                                    .replace(/B/g, '8').replace(/I/g, '1')
+                                    .replace(/L/g, '1').replace(/U/g, '0')
+                                    .replace(/D/g, '0').replace(/G/g, '6')
+                                    .replace(/T/g, '7');
+                                return plate;
+                            }
+                        }
+                        
+                        // 如果沒有匹配到格式，嘗試取出連續的字母和數字
+                        const allMatches = cleaned.match(/[A-Z]+|[0-9]+/g);
+                        if (allMatches && allMatches.length >= 2) {
+                            const letters = allMatches.find(m => /[A-Z]/.test(m)) || '';
+                            const numbers = allMatches.find(m => /[0-9]/.test(m)) || '';
+                            if (letters && numbers) {
+                                return letters.substring(0, 3) + '-' + numbers.substring(0, 4);
+                            }
+                        }
+                        return cleaned;
+                    };
+                    
+                    // 建立不同參數的影像進行辨識
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // 處理1: 高對比
+                    ctx.drawImage(img, 0, 0);
+                    preprocessImage(ctx, canvas.width, canvas.height, 1.8, 0);
+                    const highContrast = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // 處理2: 明亮
+                    ctx.drawImage(img, 0, 0);
+                    preprocessImage(ctx, canvas.width, canvas.height, 1.2, 30);
+                    const brightened = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // 處理3: 二值化
+                    ctx.drawImage(img, 0, 0);
+                    preprocessImage(ctx, canvas.width, canvas.height, 2.0, -20);
+                    const binary = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // 同時進行多個辨識
+                    Promise.all([
+                        processImage(highContrast, 'highContrast'),
+                        processImage(brightened, 'brightened'),
+                        processImage(binary, 'binary'),
+                        processImage(e.target.result, 'original')
+                    ]).then(results => {
+                        // 找出最佳結果
+                        let bestPlate = '';
+                        let bestConfidence = 0;
+                        
+                        for (const result of results) {
+                            const text = result.data.text;
+                            const confidence = result.data.confidence;
+                            const plate = parsePlate(text);
+                            
+                            if (plate.length >= 5 && plate.length <= 8) {
+                                if (confidence > bestConfidence) {
+                                    bestConfidence = confidence;
+                                    bestPlate = plate;
+                                }
+                            }
+                        }
+                        
+                        // 如果沒有好結果，嘗試原始辨識
+                        if (!bestPlate || bestPlate.length < 5) {
+                            const lastResult = results[results.length - 1];
+                            bestPlate = parsePlate(lastResult.data.text);
+                        }
+                        
+                        document.getElementById('scannedPlate').textContent = bestPlate || '无法辨识';
+                        if (bestPlate && bestPlate.length >= 5) {
+                            document.getElementById('quoteSearch').value = bestPlate;
+                            document.getElementById('licensePlate').value = bestPlate;
+                            filterQuotes();
+                            alert('📷 辨識結果：' + bestPlate);
+                        } else {
+                            alert('⚠️ 辨識失敗，請手動輸入車牌');
+                        }
+                    }).catch(err => {
+                        document.getElementById('scannedPlate').textContent = '请手动输入';
+                        alert('⚠️ 辨識失敗，請手動輸入車牌');
+                    });
+                };
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function searchByPlate() {
+            const plateInput = document.getElementById('quoteSearch').value.trim().toUpperCase().replace(/-/g, '');
+            if (!plateInput) return;
+            
+            currentScannedPlate = plateInput;
+            
+            const plate = plateInput.toLowerCase();
+            const container = document.getElementById('quotesList');
+            
+            // 搜尋所有報價記錄
+            const matchedQuotes = quotes.filter(q => {
+                const vehicle = (q.customer.vehicle || '').toLowerCase().replace(/[\s-]/g, '');
+                return vehicle.includes(plate) || plate.includes(vehicle);
+            });
+            
+            if (matchedQuotes.length > 0) {
+                // 找到匹配的報價
+                let msg = '找到 ' + matchedQuotes.length + ' 筆資料：\n\n';
+                matchedQuotes.forEach((q, i) => {
+                    msg += (i+1) + '. ' + q.customer.name + ' - ' + q.customer.vehicle + '\n';
+                    msg += '   📅 ' + new Date(q.date).toLocaleDateString('zh-TW') + '\n';
+                    msg += '   💰 $' + q.total.toLocaleString() + '\n\n';
+                });
+                alert(msg);
+                
+                // 自動填入第一個匹配的資料
+                const firstMatch = quotes.indexOf(matchedQuotes[0]);
+                editQuote(firstMatch);
+            } else {
+                // 沒找到，儲存到資料庫
+                saveUnmatchedPlate(currentScannedPlate);
+                alert('📷 車牌 ' + currentScannedPlate + '\n\n未找到報價記錄，已儲存到資料庫！');
+                
+                // 自動填入車牌
+                document.getElementById('vehicleInfo').value = currentScannedPlate;
+                document.getElementById('licensePlate').value = currentScannedPlate;
+                switchScreen('new');
+            }
+        }
+        
+        function saveUnmatchedPlate(plate) {
+            // 取得現有資料
+            let plates = JSON.parse(localStorage.getItem('vango_unknown_plates')) || [];
+            
+            // 檢查是否已存在
+            const exists = plates.find(p => p.plate === plate);
+            if (!exists) {
+                plates.push({
+                    plate: plate,
+                    found: false,
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem('vango_unknown_plates', JSON.stringify(plates));
+            }
+        }
+        
         function filterQuotes() {
-            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase();
+            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase().replace(/-/g, '');
             const container = document.getElementById('quotesList');
             
             if(keyword === '') {
@@ -510,6 +1338,7 @@
                 (q.customer.name && q.customer.name.toLowerCase().includes(keyword)) ||
                 (q.customer.phone && q.customer.phone.toLowerCase().includes(keyword)) ||
                 (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(keyword)) ||
+                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().replace(/-/g, '').includes(keyword)) ||
                 (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().includes(keyword))
             );
             
@@ -531,7 +1360,7 @@
                             <button onclick="event.stopPropagation();deleteQuote(${realIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
                         </div>
                     </div>
-                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} ${q.customer.licensePlate ? '| 🚗 ' + q.customer.licensePlate : ''} | ${q.customer.phone}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
@@ -555,7 +1384,7 @@
                             <button onclick="event.stopPropagation();deleteQuote(${idx})" style="background:none;border:none;font-size:16px;cursor:pointer;">🗑️</button>
                         </div>
                     </div>
-                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} ${q.customer.licensePlate ? '| 🚗 ' + q.customer.licensePlate : ''} | ${q.customer.phone}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
@@ -568,7 +1397,9 @@
             document.getElementById('customerName').value = q.customer.name || '';
             document.getElementById('customerPhone').value = q.customer.phone || '';
             document.getElementById('customerLine').value = q.customer.line || '';
+            document.getElementById('customerTaxId').value = q.customer.taxId || '';
             document.getElementById('vehicleInfo').value = q.customer.vehicle || '';
+            document.getElementById('licensePlate').value = q.customer.licensePlate || '';
             document.getElementById('entryDate').value = q.customer.entryDate || '';
             document.getElementById('exitDate').value = q.customer.exitDate || '';
             document.getElementById('salesPerson').value = q.customer.salesPerson || '';
@@ -585,7 +1416,7 @@
         function exportQuotePDF(idx) {
             const q = quotes[idx];
             const {subtotal, tax, total, deposit} = q;
-            const {name, phone, line, vehicle, entryDate, exitDate, salesPerson} = q.customer;
+            const {name, phone, line, taxId, vehicle, licensePlate, entryDate, exitDate, salesPerson} = q.customer;
             const notes = q.notes;
             const taxRate = q.taxRate;
             const quoteDate = new Date(q.date).toLocaleDateString('zh-TW');
@@ -616,6 +1447,7 @@
                         <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
                         <p style="margin:3px 0;">👤 姓名：${name}</p>
                         <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${taxId ? `<p style="margin:3px 0;">🏢 統一編號：${taxId}</p>` : ''}
                         ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
                         ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
                         ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
@@ -686,9 +1518,11 @@
             alert('📋 報價詳情\n\n' +
                 '👤 姓名：' + q.customer.name + '\n' +
                 '📞 電話：' + q.customer.phone + 
+                (q.customer.taxId ? '\n🏢 統一編號：' + q.customer.taxId : '') +
                 (q.customer.salesPerson ? '\n👔 業務：' + q.customer.salesPerson : '') +
                 (q.customer.line ? '\n💬 LINE：' + q.customer.line : '') +
                 (q.customer.vehicle ? '\n🚗 車輛：' + q.customer.vehicle : '') +
+                (q.customer.licensePlate ? '\n🚗 車牌：' + q.customer.licensePlate : '') +
                 dateInfo +
                 '\n\n📦 項目：\n' + q.items.map(i => '  • ' + i.name + ' x' + i.qty + ' = $' + (i.price * i.qty).toLocaleString()).join('\n') +
                 '\n\n💰 小計：$' + q.subtotal.toLocaleString() +
@@ -711,7 +1545,9 @@
             document.getElementById('customerName').value = '';
             document.getElementById('customerPhone').value = '';
             document.getElementById('customerLine').value = '';
+            document.getElementById('customerTaxId').value = '';
             document.getElementById('vehicleInfo').value = '';
+            document.getElementById('licensePlate').value = '';
             document.getElementById('entryDate').value = '';
             document.getElementById('exitDate').value = '';
             document.getElementById('salesPerson').value = '';
@@ -942,6 +1778,7 @@
             
             const {subtotal, tax, total} = calculate();
             const line = document.getElementById('customerLine').value.trim();
+            const taxId = document.getElementById('customerTaxId').value.trim();
             const vehicle = document.getElementById('vehicleInfo').value.trim();
             const entryDate = document.getElementById('entryDate').value;
             const exitDate = document.getElementById('exitDate').value;
@@ -977,6 +1814,7 @@
                         <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
                         <p style="margin:3px 0;">👤 姓名：${name}</p>
                         <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${taxId ? `<p style="margin:3px 0;">🏢 統一編號：${taxId}</p>` : ''}
                         ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
                         ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
                         ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
@@ -1031,9 +1869,10 @@
             html2pdf().set(opt).from(pdfContent).save();
         }
         
-        if('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
+        // PWA 功能 - 註冊 service worker
+        // if('serviceWorker' in navigator) {
+        //     navigator.serviceWorker.register('sw.js').catch(() => {});
+        // }
     </script>
 </body>
 </html>
