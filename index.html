@@ -105,6 +105,12 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 <h3>🚗 車型快捷鍵</h3>
 <div id="vehiclePresets" class="grid"></div>
 </div>
+
+<div class="card">
+<h3>⚙️ 服務快捷鍵</h3>
+<div id="serviceQuickSelect" class="grid"></div>
+</div>
+
 <div class="card">
 <h3>➕ 新增車型</h3>
 <input type="text" id="newVehiclePreset" class="form-input" placeholder="輸入車型名稱">
@@ -266,10 +272,21 @@ function renderVehiclePresets() {
   container.innerHTML = vehiclePresets.map(v => 
     `<div class="grid-item" onclick="selectVehicle('${v}')">${v}</div>`
   ).join('');
+  
+  // 渲染服務快捷鍵
+  const serviceContainer = document.getElementById('serviceQuickSelect');
+  serviceContainer.innerHTML = services.map(s => 
+    `<div class="grid-item" onclick="addServiceToQuote('${s.name}', ${s.price})">${s.name}<br>$${s.price}</div>`
+  ).join('');
 }
 
 function selectVehicle(name) {
   document.getElementById('vehicleInfo').value = name;
+  switchTab('new');
+}
+
+function addServiceToQuote(name, price) {
+  alert('已選擇服務: ' + name + ' - $' + price);
   switchTab('new');
 }
 
