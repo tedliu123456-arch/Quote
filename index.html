@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>凡構國際 報價系統</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2c2c; }
@@ -20,9 +21,16 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; }
 .btn-primary { background: #1a3d34; color: white; }
 .btn-accent { background: #d4a853; color: #1a3d34; margin-top: 10px; }
+.btn-small { padding: 8px 15px; font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.grid-item { padding: 12px; background: #f5f5f5; border-radius: 10px; text-align: center; cursor: pointer; font-size: 13px; }
+.grid-item:active { background: #d4a853; }
+.camera-box { position: relative; width: 100%; max-width: 400px; margin: 0 auto; }
+.camera-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 30%; border: 3px dashed white; border-radius: 10px; pointer-events: none; }
 </style>
 </head>
 <body>
+
 <!-- 導航 -->
 <nav class="nav">
 <a href="#" onclick="switchTab('new');return false;" id="nav-new" class="active">📝 報價</a>
@@ -35,52 +43,64 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 <div id="screen-new" class="content screen active">
 <div class="card">
 <h3>👤 客戶資訊</h3>
-<div class="form-group">
-<label class="form-label">姓名 *</label>
-<input type="text" id="customerName" class="form-input" placeholder="王先生">
-</div>
-<div class="form-group">
-<label class="form-label">電話</label>
-<input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678">
-</div>
-<div class="form-group">
-<label class="form-label">LINE ID</label>
-<input type="text" id="customerLine" class="form-input" placeholder="line12345">
-</div>
-<div class="form-group">
-<label class="form-label">統一編號</label>
-<input type="text" id="customerTaxId" class="form-input" placeholder="12345678">
-</div>
+<div class="form-group"><label class="form-label">姓名 *</label><input type="text" id="customerName" class="form-input" placeholder="王先生"></div>
+<div class="form-group"><label class="form-label">電話</label><input type="tel" id="customerPhone" class="form-input" placeholder="0912-345-678"></div>
+<div class="form-group"><label class="form-label">LINE ID</label><input type="text" id="customerLine" class="form-input" placeholder="line12345"></div>
+<div class="form-group"><label class="form-label">統一編號</label><input type="text" id="customerTaxId" class="form-input" placeholder="12345678"></div>
+<div class="form-group"><label class="form-label">業務</label><input type="text" id="salesPerson" class="form-input" placeholder="業務姓名"></div>
 </div>
 
 <div class="card">
 <h3>🚗 車輛資訊</h3>
-<div class="form-group">
-<label class="form-label">車型</label>
-<input type="text" id="vehicleInfo" class="form-input" placeholder="Toyota Hiace">
+<div class="form-group"><label class="form-label">車型</label><input type="text" id="vehicleInfo" class="form-input" placeholder="Toyota Hiace"></div>
+<div class="form-group"><label class="form-label">車牌</label>
+<div style="display:flex;gap:8px;">
+<input type="text" id="licensePlate" class="form-input" placeholder="ABC-1234" style="flex:1;">
+<button onclick="startCamera()" style="padding:12px;background:#1a3d34;color:white;border:none;border-radius:10px;font-size:20px;">📷</button>
 </div>
-<div class="form-group">
-<label class="form-label">車牌</label>
-<input type="text" id="licensePlate" class="form-input" placeholder="ABC-1234">
 </div>
 </div>
 
-<button class="btn btn-primary" onclick="alert('儲存成功!')">💾 儲存報價</button>
+<!-- 相機區 -->
+<div id="cameraSection" class="card" style="display:none;">
+<h3>📷 車牌辨識</h3>
+<div class="camera-box">
+<video id="cameraPreview" autoplay playsinline style="width:100%;border-radius:10px;"></video>
+<div class="camera-frame"></div>
+</div>
+<p style="text-align:center;margin:10px 0;">請將車牌對準上方方框，點擊拍照</p>
+<button onclick="capturePlate()" class="btn btn-accent">📸 拍照辨識</button>
+<button onclick="stopCamera()" class="btn" style="margin-top:10px;background:#666;color:white;">關閉相機</button>
+</div>
+
+<div id="scanResult" class="card" style="display:none;">
+<h3>🚗 辨識結果</h3>
+<p id="scannedPlate" style="font-size:24px;font-weight:bold;color:#1a3d34;text-align:center;"></p>
+<button onclick="usePlate()" class="btn btn-accent">✓ 使用此車牌</button>
+</div>
+
+<button class="btn btn-primary" onclick="saveQuote()">💾 儲存報價</button>
 </div>
 
 <!-- 列表 -->
 <div id="screen-list" class="content screen">
 <div class="card">
 <h3>📋 報價列表</h3>
-<p>目前沒有報價記錄</p>
+<input type="text" id="quoteSearch" class="form-input" placeholder="搜尋..." oninput="filterQuotes()">
 </div>
+<div id="quotesList"></div>
 </div>
 
 <!-- 車型 -->
 <div id="screen-presets" class="content screen">
 <div class="card">
 <h3>🚗 車型快捷鍵</h3>
-<p>尚未設定車型</p>
+<div id="vehiclePresets" class="grid"></div>
+</div>
+<div class="card">
+<h3>➕ 新增車型</h3>
+<input type="text" id="newVehiclePreset" class="form-input" placeholder="輸入車型名稱">
+<button onclick="addVehiclePreset()" class="btn btn-accent" style="margin-top:10px;">新增</button>
 </div>
 </div>
 
@@ -88,17 +108,192 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 <div id="screen-services" class="content screen">
 <div class="card">
 <h3>⚙️ 服務項目</h3>
-<p>尚未設定服務</p>
+<div id="serviceItems" class="grid"></div>
+</div>
+<div class="card">
+<h3>➕ 新增服務</h3>
+<input type="text" id="newServiceName" class="form-input" placeholder="服務名稱">
+<input type="number" id="newServicePrice" class="form-input" placeholder="價格" style="margin-top:10px;">
+<button onclick="addService()" class="btn btn-accent" style="margin-top:10px;">新增</button>
 </div>
 </div>
 
 <script>
+// 資料
+let quotes = JSON.parse(localStorage.getItem('vango_quotes')) || [];
+let vehiclePresets = JSON.parse(localStorage.getItem('vango_vehicle_presets')) || ['Toyota Hiace', 'Ford Transit', 'Mercedes Sprinter', 'VW California', 'Peugeot Boxer'];
+let services = JSON.parse(localStorage.getItem('vango_services')) || [
+  {name: '冷氣安裝', price: 15000},
+  {name: '配電系統', price: 8000},
+  {name: '冰箱安裝', price: 12000},
+  {name: '太陽能板', price: 20000}
+];
+
+let videoStream = null;
+
+// 導航
 function switchTab(tab) {
-document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-document.getElementById('screen-' + tab).classList.add('active');
-document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
-document.getElementById('nav-' + tab).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('nav-' + tab).classList.add('active');
+  if(tab === 'list') renderQuotes();
+  if(tab === 'presets') renderVehiclePresets();
+  if(tab === 'services') renderServices();
 }
+
+// 儲存
+function saveQuote() {
+  const quote = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    customer: {
+      name: document.getElementById('customerName').value,
+      phone: document.getElementById('customerPhone').value,
+      line: document.getElementById('customerLine').value,
+      taxId: document.getElementById('customerTaxId').value,
+      salesPerson: document.getElementById('salesPerson').value,
+      vehicle: document.getElementById('vehicleInfo').value,
+      licensePlate: document.getElementById('licensePlate').value
+    }
+  };
+  
+  if(!quote.customer.name) { alert('請輸入姓名'); return; }
+  
+  quotes.unshift(quote);
+  localStorage.setItem('vango_quotes', JSON.stringify(quotes));
+  alert('儲存成功！');
+  clearForm();
+}
+
+function clearForm() {
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('customerLine').value = '';
+  document.getElementById('customerTaxId').value = '';
+  document.getElementById('salesPerson').value = '';
+  document.getElementById('vehicleInfo').value = '';
+  document.getElementById('licensePlate').value = '';
+}
+
+// 列表
+function renderQuotes() {
+  const list = document.getElementById('quotesList');
+  const search = document.getElementById('quoteSearch').value.toLowerCase();
+  const filtered = quotes.filter(q => 
+    q.customer.name.toLowerCase().includes(search) ||
+    q.customer.phone.includes(search) ||
+    (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().includes(search)) ||
+    (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(search))
+  );
+  
+  if(filtered.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:#999;">尚無報價記錄</p>';
+    return;
+  }
+  
+  list.innerHTML = filtered.map(q => `
+    <div class="card" style="cursor:pointer;" onclick="alert('單號: ${q.id}\n姓名: ${q.customer.name}\n電話: ${q.customer.phone}\n車牌: ${q.customer.licensePlate || "-"}')">
+      <div style="font-weight:bold;">${q.customer.name}</div>
+      <div style="font-size:12px;color:#666;">${q.customer.vehicle || '-'} | ${q.customer.licensePlate || '-'} | ${q.customer.phone}</div>
+    </div>
+  `).join('');
+}
+
+function filterQuotes() { renderQuotes(); }
+
+// 車牌相機
+function startCamera() {
+  document.getElementById('cameraSection').style.display = 'block';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      videoStream = stream;
+      document.getElementById('cameraPreview').srcObject = stream;
+    })
+    .catch(err => alert('無法開啟相機'));
+}
+
+function stopCamera() {
+  if(videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  document.getElementById('cameraSection').style.display = 'none';
+}
+
+function capturePlate() {
+  const video = document.getElementById('cameraPreview');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  
+  document.getElementById('scanResult').style.display = 'block';
+  document.getElementById('scannedPlate').textContent = '辨識中...';
+  
+  Tesseract.recognize(canvas.toDataURL('image/jpeg', 0.8), 'eng', {
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-'
+  }).then(result => {
+    let plate = result.data.text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if(plate.length > 4) plate = plate.substring(0,3) + '-' + plate.substring(3,7);
+    document.getElementById('scannedPlate').textContent = plate || '無法辨識';
+  }).catch(() => {
+    document.getElementById('scannedPlate').textContent = '辨識失敗';
+  });
+}
+
+function usePlate() {
+  const plate = document.getElementById('scannedPlate').textContent;
+  if(plate && plate !== '辨識中...' && plate !== '無法辨識' && plate !== '辨識失敗') {
+    document.getElementById('licensePlate').value = plate;
+    stopCamera();
+    document.getElementById('scanResult').style.display = 'none';
+  }
+}
+
+// 車型
+function renderVehiclePresets() {
+  const container = document.getElementById('vehiclePresets');
+  container.innerHTML = vehiclePresets.map(v => 
+    `<div class="grid-item" onclick="selectVehicle('${v}')">${v}</div>`
+  ).join('');
+}
+
+function selectVehicle(name) {
+  document.getElementById('vehicleInfo').value = name;
+  switchTab('new');
+}
+
+function addVehiclePreset() {
+  const name = document.getElementById('newVehiclePreset').value.trim();
+  if(name && !vehiclePresets.includes(name)) {
+    vehiclePresets.push(name);
+    localStorage.setItem('vango_vehicle_presets', JSON.stringify(vehiclePresets));
+    renderVehiclePresets();
+    document.getElementById('newVehiclePreset').value = '';
+  }
+}
+
+// 服務
+function renderServices() {
+  const container = document.getElementById('serviceItems');
+  container.innerHTML = services.map(s => 
+    `<div class="grid-item" onclick="alert('${s.name}: $${s.price}')">${s.name}<br>$${s.price}</div>`
+  ).join('');
+}
+
+function addService() {
+  const name = document.getElementById('newServiceName').value.trim();
+  const price = parseInt(document.getElementById('newServicePrice').value);
+  if(name && price) {
+    services.push({name, price});
+    localStorage.setItem('vango_services', JSON.stringify(services));
+    renderServices();
+    document.getElementById('newServiceName').value = '';
+    document.getElementById('newServicePrice').value = '';
+  }
+}
+
+// 初始化
+renderVehiclePresets();
+renderServices();
 </script>
 </body>
 </html>
