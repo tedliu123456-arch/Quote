@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250224l';
+        const APP_VERSION = '20250224m';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -149,20 +149,15 @@
     <header class="app-header">
         <div class="app-title"></div>
         <div style="display:flex;align-items:center;gap:5px;">
-            <button onclick="switchScreen('new')" id="tab-new" class="tab-btn active">📝</button>
-            <button onclick="switchScreen('list')" id="tab-list" class="tab-btn">📋</button>
-            <button onclick="switchScreen('presets')" id="tab-presets" class="tab-btn">🚗</button>
-            <button onclick="switchScreen('services')" id="tab-services" class="tab-btn">⚙️</button>
+            <a href="javascript:switchScreen('new')" id="tab-new" style="padding:10px;text-decoration:none;">📝</a>
+            <a href="javascript:switchScreen('list')" id="tab-list" style="padding:10px;text-decoration:none;">📋</a>
+            <a href="javascript:switchScreen('presets')" id="tab-presets" style="padding:10px;text-decoration:none;">🚗</a>
+            <a href="javascript:switchScreen('services')" id="tab-services" style="padding:10px;text-decoration:none;">⚙️</a>
         </div>
     </header>
     
     <style>
-        .tab-btn {
-            background: none !important; border: none !important; font-size: 18px; padding: 8px 12px; 
-            cursor: pointer !important; opacity: 0.5; pointer-events: auto !important;
-            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-        }
-        .tab-btn.active { opacity: 1; background: var(--accent) !important; border-radius: 8px; }
+        #tab-new, #tab-list, #tab-presets, #tab-services { color: #666; }
     </style>
     
     <script>
@@ -361,7 +356,7 @@
             const target = document.getElementById('screen-' + screen);
             if(target) { target.style.display = 'block'; }
             
-            const tabs = document.querySelectorAll('.tab-btn');
+            const tabs = document.querySelectorAll('#tab-new,#tab-list,#tab-presets,#tab-services');
             for(let t of tabs) { t.classList.remove('active'); }
             
             const tab = document.getElementById('tab-' + screen);
