@@ -1175,7 +1175,7 @@
         }
         
         function searchByPlate() {
-            const plateInput = document.getElementById('quoteSearch').value.trim().toUpperCase();
+            const plateInput = document.getElementById('quoteSearch').value.trim().toUpperCase().replace(/-/g, '');
             if (!plateInput) return;
             
             currentScannedPlate = plateInput;
@@ -1231,7 +1231,7 @@
         }
         
         function filterQuotes() {
-            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase();
+            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase().replace(/-/g, '');
             const container = document.getElementById('quotesList');
             
             if(keyword === '') {
@@ -1243,7 +1243,7 @@
                 (q.customer.name && q.customer.name.toLowerCase().includes(keyword)) ||
                 (q.customer.phone && q.customer.phone.toLowerCase().includes(keyword)) ||
                 (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(keyword)) ||
-                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().includes(keyword)) ||
+                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().replace(/-/g, '').includes(keyword)) ||
                 (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().includes(keyword))
             );
             
