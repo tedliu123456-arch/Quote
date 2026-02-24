@@ -641,38 +641,75 @@
                 console.log('API 回應:', data);
                 
                 if (data.results && data.results.length > 0) {
-                    // 取得最高置信度的結果
-                    let bestResult = data.results[0];
-                    let plate = bestResult.plate.toUpperCase();
-                    let confidence = bestResult.score || 0;
-                    
-                    // 格式化車牌 (加入 dash)
-                    let formattedPlate = plate;
-                    // 移除所有非英數字元
-                    plate = plate.replace(/[^A-Z0-9]/g, '');
-                    if (plate.length >= 5) {
-                        if (plate.length <= 4) {
-                            formattedPlate = plate;
-                        } else if (plate.length <= 5) {
-                            formattedPlate = plate.substring(0, 2) + '-' + plate.substring(2);
-                        } else if (plate.length <= 6) {
-                            formattedPlate = plate.substring(0, 3) + '-' + plate.substring(3);
-                        } else {
-                            formattedPlate = plate.substring(0, 3) + '-' + plate.substring(3, 7);
+                    // 收集所有辨識結果候選
+                    let candidates = [];
+                    data.results.forEach((result, index) => {
+                        let plate = result.plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        let score = result.score || 0;
+                        
+                        // 格式化
+                        let formatted = plate;
+                        if (plate.length >= 5) {
+                            if (plate.length <= 4) {
+                                formatted = plate;
+                            } else if (plate.length <= 5) {
+                                formatted = plate.substring(0, 2) + '-' + plate.substring(2);
+                            } else if (plate.length <= 6) {
+                                formatted = plate.substring(0, 3) + '-' + plate.substring(3);
+                            } else {
+                                formatted = plate.substring(0, 3) + '-' + plate.substring(3, 7);
+                            }
                         }
+                        
+                        candidates.push({ original: plate, formatted: formatted, score: score });
+                    });
+                    
+                    // 顯示候選選項
+                    if (candidates.length > 1) {
+                        // 多個候選
+                        let optionsHtml = candidates.slice(0, 3).map((c, i) => 
+                            `<button onclick="selectPlate('${c.formatted}')" style="margin:5px;padding:12px 20px;background:${i===0?'#4CAF50':'#fff'};color:${i===0?'white':'#333'};border:2px solid #ddd;border-radius:8px;font-size:16px;cursor:pointer;">${c.formatted} <span style="font-size:12px;">(${(c.score*100).toFixed(0)}%)</span></button>`
+                        ).join('');
+                        
+                        liveResult.innerHTML = '🚗 請選擇正確的車牌：<div style="margin-top:15px;">' + optionsHtml + '</div><div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button></div>';
+                        liveResult.style.background = '#fff3e0';
+                        
+                        // 預設選擇第一個
+                        document.getElementById('licensePlate').value = candidates[0].formatted;
+                        document.getElementById('quoteSearch').value = candidates[0].formatted;
+                        filterQuotes();
+                    } else {
+                        // 只有一個結果
+                        let bestResult = data.results[0];
+                        let plate = bestResult.plate.toUpperCase();
+                        let confidence = bestResult.score || 0;
+                        
+                        // 格式化車牌 (加入 dash)
+                        let formattedPlate = plate.replace(/[^A-Z0-9]/g, '');
+                        if (formattedPlate.length >= 5) {
+                            if (formattedPlate.length <= 4) {
+                                formattedPlate = formattedPlate;
+                            } else if (formattedPlate.length <= 5) {
+                                formattedPlate = formattedPlate.substring(0, 2) + '-' + formattedPlate.substring(2);
+                            } else if (formattedPlate.length <= 6) {
+                                formattedPlate = formattedPlate.substring(0, 3) + '-' + formattedPlate.substring(3);
+                            } else {
+                                formattedPlate = formattedPlate.substring(0, 3) + '-' + formattedPlate.substring(3, 7);
+                            }
+                        }
+                        
+                        liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + formattedPlate + '</span>';
+                        if (confidence > 0) {
+                            liveResult.innerHTML += '<div style="font-size:12px;color:#666;margin-top:5px;">置信度: ' + (confidence * 100).toFixed(1) + '%</div>';
+                        }
+                        liveResult.style.background = '#e8f5e9';
+                        
+                        document.getElementById('licensePlate').value = formattedPlate;
+                        document.getElementById('quoteSearch').value = formattedPlate;
+                        filterQuotes();
+                        
+                        liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
                     }
-                    
-                    liveResult.innerHTML = '🚗 辨識結果：<span style="font-size:24px;">' + formattedPlate + '</span>';
-                    if (confidence > 0) {
-                        liveResult.innerHTML += '<div style="font-size:12px;color:#666;margin-top:5px;">置信度: ' + (confidence * 100).toFixed(1) + '%</div>';
-                    }
-                    liveResult.style.background = '#e8f5e9';
-                    
-                    document.getElementById('licensePlate').value = formattedPlate;
-                    document.getElementById('quoteSearch').value = formattedPlate;
-                    filterQuotes();
-                    
-                    liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
                 } else if (data.error) {
                     // API 錯誤
                     console.log('API 錯誤:', data.error);
@@ -880,6 +917,17 @@
             const liveResult = document.getElementById('livePlateResult');
             liveResult.innerHTML = '👆 點擊畫面拍照辨識';
             liveResult.style.background = '#fff3e0';
+        }
+        
+        function selectPlate(plate) {
+            document.getElementById('licensePlate').value = plate;
+            document.getElementById('quoteSearch').value = plate;
+            filterQuotes();
+            
+            const liveResult = document.getElementById('livePlateResult');
+            liveResult.innerHTML = '✅ 已選擇：<span style="font-size:24px;">' + plate + '</span>';
+            liveResult.innerHTML += '<div style="margin-top:15px;"><button onclick="retakePhoto()" style="background:var(--primary);color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;">🔄 重新拍照</button> <button onclick="confirmPlate()" style="background:#4CAF50;color:white;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-left:10px;">✓ 確認</button></div>';
+            liveResult.style.background = '#e8f5e9';
         }
         
         function confirmPlate() {
