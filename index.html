@@ -222,7 +222,8 @@
             
             <div class="summary">
                 <div class="summary-row"><span>小計</span><span id="subtotal">$0</span></div>
-                <div class="summary-row"><span>稅金 (5%)</span><span id="tax">$0</span></div>
+                <div class="summary-row">
+                    <span>稅金 (<input type="number" id="taxRateInput" value="5" style="width:40px;padding:2px;border:1px solid #ddd;border-radius:4px;text-align:center;" onchange="updateTaxRate()">%)</span><span id="tax">$0</span></div>
                 <div class="summary-row summary-total"><span>總計</span><span id="total">$0</span></div>
             </div>
             
@@ -515,17 +516,23 @@
         
         function calculate() {
             let subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+            taxRate = parseFloat(document.getElementById('taxRateInput').value) || 5;
             let tax = Math.round(subtotal * (taxRate / 100));
             let total = subtotal + tax;
             let deposit = parseInt(document.getElementById('depositAmount').value) || 0;
             let balance = total - deposit;
             
             document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString();
-            document.getElementById('tax').textContent = '$' + tax.toLocaleString() + ' (' + taxRate + '%)';
+            document.getElementById('tax').textContent = '$' + tax.toLocaleString();
             document.getElementById('total').textContent = '$' + total.toLocaleString();
             document.getElementById('balanceAmount').textContent = '$' + balance.toLocaleString();
             
-            return {subtotal, tax, total, deposit, balance};
+            return {subtotal, tax, total, deposit, balance, taxRate};
+        }
+        
+        function updateTaxRate() {
+            taxRate = parseFloat(document.getElementById('taxRateInput').value) || 5;
+            calculate();
         }
         
         function saveQuote() {
