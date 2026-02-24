@@ -86,7 +86,10 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 <div id="screen-list" class="content screen">
 <div class="card">
 <h3>📋 報價列表</h3>
-<input type="text" id="quoteSearch" class="form-input" placeholder="搜尋..." oninput="filterQuotes()">
+<div style="display:flex;gap:8px;">
+<input type="text" id="quoteSearch" class="form-input" placeholder="搜尋姓名、電話、車牌..." oninput="filterQuotes()" style="flex:1;">
+<button onclick="filterQuotes()" style="padding:12px;background:#d4a853;color:#1a3d34;border:none;border-radius:10px;font-size:18px;">🔍</button>
+</div>
 </div>
 <div id="quotesList"></div>
 </div>
