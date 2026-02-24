@@ -129,12 +129,16 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #fdfbf7; color: #2c2
 <script>
 // 資料
 let quotes = JSON.parse(localStorage.getItem('vango_quotes')) || [];
-let vehiclePresets = JSON.parse(localStorage.getItem('vango_vehicle_presets')) || ['Toyota Hiace', 'Ford Transit', 'Mercedes Sprinter', 'VW California', 'Peugeot Boxer'];
+let vehiclePresets = JSON.parse(localStorage.getItem('vango_vehicle_presets')) || ['Toyota Hiace', 'Ford Transit', 'Mercedes Sprinter', 'VW California', 'Peugeot Boxer', 'Citroen Jumper', 'Renault Master', 'Iveco Daily'];
 let services = JSON.parse(localStorage.getItem('vango_services')) || [
   {name: '冷氣安裝', price: 15000},
   {name: '配電系統', price: 8000},
   {name: '冰箱安裝', price: 12000},
-  {name: '太陽能板', price: 20000}
+  {name: '太陽能板', price: 20000},
+  {name: '尿袋水箱', price: 5000},
+  {name: '逆變器', price: 10000},
+  {name: '鋰電電池', price: 25000},
+  {name: '充電系統', price: 6000}
 ];
 
 let videoStream = null;
