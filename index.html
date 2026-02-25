@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250226h';
+        const APP_VERSION = '20250227a';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -645,11 +645,119 @@
         let currentScannedPlate = '';
         
         function scanLicensePlate() {
-            document.getElementById('cameraInput').click();
+            openCameraScanner();
         }
         
         function scanAndSearch() {
-            document.getElementById('cameraInput').click();
+            openCameraScanner();
+        }
+        
+        // 打開相機掃描器
+        function openCameraScanner() {
+            const scannerHtml = `
+                <div id="cameraScanner" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;display:flex;flex-direction:column;">
+                    <div style="position:absolute;top:10px;right:10px;z-index:10;">
+                        <button onclick="closeCameraScanner()" style="background:rgba(255,255,255,0.9);border:none;padding:10px 20px;border-radius:20px;font-size:16px;cursor:pointer;">✕ 關閉</button>
+                    </div>
+                    <video id="scannerVideo" autoplay playsinline style="width:100%;height:70%;object-fit:cover;"></video>
+                    <div style="flex:1;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+                        <div id="scannerResult" style="color:white;font-size:18px;margin-bottom:15px;text-align:center;">📷 將車牌對準畫面中央</div>
+                        <button id="captureBtn" onclick="capturePlate()" style="background:var(--accent);color:var(--primary);border:none;padding:15px 40px;border-radius:30px;font-size:18px;font-weight:bold;cursor:pointer;">📷 拍照辨識</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', scannerHtml);
+            
+            // 請求相機權限
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+            })
+            .then(stream => {
+                document.getElementById('scannerVideo').srcObject = stream;
+            })
+            .catch(err => {
+                alert('無法開啟相機：' + err.message);
+                closeCameraScanner();
+            });
+        }
+        
+        function closeCameraScanner() {
+            const scanner = document.getElementById('cameraScanner');
+            if (scanner) {
+                const video = document.getElementById('scannerVideo');
+                if (video && video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                scanner.remove();
+            }
+        }
+        
+        function capturePlate() {
+            const video = document.getElementById('scannerVideo');
+            const resultDiv = document.getElementById('scannerResult');
+            const captureBtn = document.getElementById('captureBtn');
+            
+            resultDiv.innerHTML = '<span style="animation:pulse 1s infinite;">🔄 辨識中...</span>';
+            captureBtn.disabled = true;
+            
+            // 繪製影片畫面到 Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+            
+            // 使用 Plate Recognizer API
+            fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image: imgData,
+                    regions: ['tw', 'us-ca', 'us'],
+                    detect_vehicle: 0,
+                    sensitivity: 0.9
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Plate Recognition Result:', data);
+                
+                if (data.results && data.results.length > 0) {
+                    let result = data.results[0];
+                    let plate = result.plate.toUpperCase();
+                    let confidence = result.confidence ? Math.round(result.confidence * 100) : '';
+                    
+                    resultDiv.innerHTML = '<span style="color:var(--success);font-size:24px;">✅ ' + plate + '</span>';
+                    if (confidence) {
+                        resultDiv.innerHTML += '<br><span style="color:#888;font-size:14px;">信心度: ' + confidence + '%</span>';
+                    }
+                    
+                    // 自動填入
+                    document.getElementById('licensePlate').value = plate;
+                    document.getElementById('vehicleInfo').value = plate;
+                    
+                    // 2秒後關閉
+                    setTimeout(() => {
+                        closeCameraScanner();
+                        // 顯示在辨識結果區
+                        document.getElementById('scanResult').style.display = 'block';
+                        document.getElementById('scannedPlate').textContent = plate;
+                    }, 1500);
+                } else {
+                    resultDiv.innerHTML = '<span style="color:#ff6b6b;">❌ 無法辨識，請重試</span>';
+                    captureBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error('API Error:', err);
+                resultDiv.innerHTML = '<span style="color:#ff6b6b;">❌ 辨識失敗，請重試</span>';
+                captureBtn.disabled = false;
+            });
         }
         
         function processImage(input) {
