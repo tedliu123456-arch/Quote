@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250225b';
+        const APP_VERSION = '20250225c';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -575,28 +575,32 @@
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                // 顯示掃描結果區域（在報價頁面）
+                // 顯示掃描結果區域
                 document.getElementById('scanResult').style.display = 'block';
                 document.getElementById('scannedPlate').textContent = '🔄 辨識中...';
                 
-                // 使用 Tesseract.js 進行 OCR
-                Tesseract.recognize(e.target.result, 'eng+chi', {
-                    logger: function(m) {}
-                }).then(function(result) {
-                    let text = result.data.text;
-                    // 提取車牌格式 (例如: ABC-1234, 1234-AB 等)
-                    let plate = text.toUpperCase().replace(/[^A-Z0-9]/gi, '');
-                    // 嘗試找到車牌格式
-                    plate = plate.replace(/[OQ]/g, '0').replace(/[Z]/g, '2').replace(/[I]/g, '1');
-                    
-                    // 如果太短，嘗試其他方式
-                    if (plate.length < 5) {
-                        plate = text.toUpperCase().replace(/[\s\n]/g, '');
-                    }
-                    
-                    document.getElementById('scannedPlate').textContent = plate || '無法辨識';
-                    
-                    if (plate) {
+                // 將圖片轉為 base64
+                const imgData = e.target.result.split(',')[1];
+                
+                // 使用 Plate Recognizer API
+                fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Token 0855c1beecd58a6ff41d646f521439dc532f9a74',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: imgData,
+                        regions: ['tw'],
+                        detect_vehicle: 0
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        let plate = data.results[0].plate.toUpperCase();
+                        document.getElementById('scannedPlate').textContent = plate;
+                        
                         // 填入車牌
                         document.getElementById('licensePlate').value = plate;
                         document.getElementById('vehicleInfo').value = plate;
@@ -604,10 +608,13 @@
                         // 自動搜尋
                         document.getElementById('quoteSearch').value = plate;
                         searchByPlate(plate);
+                    } else {
+                        document.getElementById('scannedPlate').textContent = '無法辨識，請手動輸入';
                     }
-                }).catch(function(err) {
-                    console.error('OCR Error:', err);
-                    document.getElementById('scannedPlate').textContent = '請手動輸入';
+                })
+                .catch(function(err) {
+                    console.error('Plate Recognizer API Error:', err);
+                    document.getElementById('scannedPlate').textContent = '辨識失敗，請手動輸入';
                 });
             };
             
