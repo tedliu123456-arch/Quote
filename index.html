@@ -226,7 +226,7 @@
             
             <div class="summary">
                 <div class="summary-row"><span>小計</span><span id="subtotal">$0</span></div>
-                <div class="summary-row"><span>稅金 (5%)</span><span id="tax">$0</span></div>
+                <div class="summary-row"><span>稅金 (<span id="taxRateLabel">5</span>%)</span><span id="tax">$0</span></div>
                 <div class="summary-row summary-total"><span>總計</span><span id="total">$0</span></div>
             </div>
             
@@ -241,7 +241,10 @@
             </div>
             
             <button class="btn btn-primary btn-block" onclick="saveQuote()">💾 儲存報價</button>
-            <button class="btn btn-accent btn-block" style="margin-top:10px;" onclick="generatePDF()">📄 產生 PDF</button>
+            <div style="display:flex;gap:10px;margin-top:10px;">
+                <button class="btn btn-accent btn-block" style="flex:1;" onclick="previewQuote()">👁️ 預覽</button>
+                <button class="btn btn-accent btn-block" style="flex:1;" onclick="generatePDF()">📄 PDF</button>
+            </div>
         </div>
         
         <!-- List -->
@@ -509,6 +512,7 @@
             
             document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString();
             document.getElementById('tax').textContent = '$' + tax.toLocaleString() + ' (' + taxRate + '%)';
+            document.getElementById('taxRateLabel').textContent = taxRate;
             document.getElementById('total').textContent = '$' + total.toLocaleString();
             document.getElementById('balanceAmount').textContent = '$' + balance.toLocaleString();
             
@@ -1106,6 +1110,126 @@
             localStorage.setItem('vango_presets', JSON.stringify(presets));
             renderPresets();
             renderVehiclePresets();
+        }
+        
+        // 預覽功能
+        function previewQuote() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            if(!name) { alert('請填寫姓名'); return; }
+            if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
+            
+            const {subtotal, tax, total} = calculate();
+            const line = document.getElementById('customerLine').value.trim();
+            const vehicle = document.getElementById('vehicleInfo').value.trim();
+            const entryDate = document.getElementById('entryDate').value;
+            const exitDate = document.getElementById('exitDate').value;
+            const salesPerson = document.getElementById('salesPerson').value.trim();
+            const notes = document.getElementById('quoteNotes').value.trim();
+            const deposit = parseInt(document.getElementById('depositAmount').value) || 0;
+            
+            const quoteDate = new Date().toLocaleDateString('zh-TW');
+            
+            let itemsHtml = selectedItems.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td style="text-align:center;">${item.qty}</td>
+                    <td style="text-align:right;">$${(item.price * item.qty).toLocaleString()}</td>
+                </tr>
+            `).join('');
+            
+            const previewContent = `
+                <div style="font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif; padding: 20px; color: #2c2c2c; max-width: 600px; margin: 0 auto;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <h1 style="color:#1a3d34;margin:0;">🏕️ 凡構國際實業社</h1>
+                        <p style="color:#666;margin:5px 0;">露營車駐車冷氣 配電專門</p>
+                        <p style="color:#666;margin:5px 0;">📞 0912-678-660 | LINE: @0912678660</p>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin:15px 0;padding:10px;background:#f5f5f5;border-radius:8px;">
+                        <span>📅 日期：${quoteDate}</span>
+                        <span>📋 預覽模式</span>
+                    </div>
+                    
+                    <div style="padding:15px;background:#fdfbf7;border-radius:8px;margin-bottom:15px;">
+                        <h3 style="color:#1a3d34;margin:0 0 10px 0;">客戶資訊</h3>
+                        <p style="margin:3px 0;">👤 姓名：${name}</p>
+                        <p style="margin:3px 0;">📞 電話：${phone}</p>
+                        ${salesPerson ? `<p style="margin:3px 0;">👔 業務：${salesPerson}</p>` : ''}
+                        ${line ? `<p style="margin:3px 0;">💬 LINE：${line}</p>` : ''}
+                        ${vehicle ? `<p style="margin:3px 0;">🚗 車輛：${vehicle}</p>` : ''}
+                        ${entryDate ? `<p style="margin:3px 0;">📅 進廠日期：${entryDate}</p>` : ''}
+                        ${exitDate ? `<p style="margin:3px 0;">🚗 出廠日期：${exitDate}</p>` : ''}
+                    </div>
+                    
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:15px;">
+                        <thead>
+                            <tr style="background:#1a3d34;color:white;">
+                                <th style="padding:10px;text-align:left;">項目</th>
+                                <th style="padding:10px;text-align:center;">數量</th>
+                                <th style="padding:10px;text-align:right;">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div style="text-align:right;padding:15px;background:#1a3d34;color:white;border-radius:8px;">
+                        <div style="margin:5px 0;">小計：$${subtotal.toLocaleString()}</div>
+                        <div style="margin:5px 0;">稅金 (${taxRate}%)：$${tax.toLocaleString()}</div>
+                        <div style="font-size:20px;font-weight:bold;margin-top:10px;">總計：$${total.toLocaleString()}</div>
+                        ${deposit > 0 ? `
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💵 訂金：$${deposit.toLocaleString()}</div>
+                        <div style="margin:5px 0;font-size:14px;opacity:0.9;">💳 尚欠：$${(total-deposit).toLocaleString()}</div>
+                        ` : ''}
+                    </div>
+                    
+                    ${notes ? `
+                    <div style="margin-top:15px;padding:15px;background:#fff9e6;border-radius:8px;">
+                        <h4 style="color:#1a3d34;margin:0 0 10px 0;">📝 備註</h4>
+                        <p style="margin:0;">${notes}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="text-align:center;margin-top:30px;color:#999;font-size:12px;">
+                        <p>這是預覽畫面，確認無誤後請點擊產生 PDF</p>
+                    </div>
+                </div>
+            `;
+            
+            // 顯示預覽
+            const previewWindow = window.open('', '_blank', 'width=600,height=800');
+            previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="zh-TW">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>報價單預覽</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { margin: 0; padding: 0; background: #f5f5f5; }
+                        .preview-container { padding: 20px; }
+                        .btn-print { 
+                            position: fixed; top: 20px; right: 20px;
+                            background: #1a3d34; color: white; border: none;
+                            padding: 15px 30px; border-radius: 8px; cursor: pointer;
+                            font-size: 16px; font-weight: bold;
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        }
+                        .btn-print:hover { background: #2d5a4a; }
+                    </style>
+                </head>
+                <body>
+                    <button class="btn-print" onclick="window.print()">🖨️ 列印/產生 PDF</button>
+                    <div class="preview-container">
+                        ${previewContent}
+                    </div>
+                </body>
+                </html>
+            `);
+            previewWindow.document.close();
         }
         
         async function generatePDF() {
