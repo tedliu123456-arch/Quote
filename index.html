@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250226b';
+        const APP_VERSION = '20250226c';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -740,6 +740,7 @@
                         </div>
                     </div>
                     <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    ${q.customer.licensePlate ? '<span style="background:var(--primary);color:white;padding:1px 6px;border-radius:4px;font-size:11px;margin-left:4px;">🚗 ' + q.customer.licensePlate + '</span>' : ''}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
@@ -764,6 +765,7 @@
                         </div>
                     </div>
                     <div class="quote-vehicle">${q.customer.vehicle || '未填車輛'} | ${q.customer.phone}
+                    ${q.customer.licensePlate ? '<span style="background:var(--primary);color:white;padding:1px 6px;border-radius:4px;font-size:11px;margin-left:4px;">🚗 ' + q.customer.licensePlate + '</span>' : ''}
                     ${q.customer.entryDate || q.customer.exitDate ? '<br>📅 ' + (q.customer.entryDate || '-') + ' → ' + (q.customer.exitDate || '-') : ''}</div>
                     <div class="quote-total">$${q.total.toLocaleString()}${q.deposit > 0 ? ' (訂金: $' + q.deposit.toLocaleString() + ')' : ''}</div>
                 </div>
