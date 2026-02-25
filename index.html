@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250226g';
+        const APP_VERSION = '20250226h';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -176,7 +176,7 @@
         <!-- New Quote -->
         <div id="screen-new" class="screen active">
             <div style="text-align:center;padding:8px 0;background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);color:white;border-radius:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
-                <span style="font-size:12px;opacity:0.9;">凡構報價系統</span> <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;">v<span id="appVersion">20250226a</span></span>
+                <span style="font-size:12px;opacity:0.9;">凡構報價系統</span> <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;">v<span id="appVersion"></span></span>
             </div>
             <div class="card">
                 <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
@@ -343,8 +343,8 @@
                 renderQuotes();
                 renderPresets();
                 renderVehiclePresets();
-                document.getElementById('taxRate').value = taxRate;
                 document.getElementById('taxRateInput').value = taxRate;
+                document.getElementById('appVersion').textContent = APP_VERSION;
             } catch(e) {
                 console.error('Init error:', e);
             }
