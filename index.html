@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250227a';
+        const APP_VERSION = '20250227b';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -609,8 +609,20 @@
             
             const {subtotal, tax, total, deposit, balance} = calculate();
             const taxLabel = taxRate === 0 ? '未稅' : '有稅金' + taxRate + '%';
+            
+            // 產生訂單編號：年月日-編號
+            let newId;
+            if (editingQuoteIndex !== null) {
+                newId = quotes[editingQuoteIndex].id;
+            } else {
+                const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+                const todayQuotes = quotes.filter(q => q.id.startsWith(today));
+                const seq = String(todayQuotes.length + 1).padStart(3, '0');
+                newId = today + '-' + seq;
+            }
+            
             const quote = {
-                id: editingQuoteIndex !== null ? quotes[editingQuoteIndex].id : 'VQ' + Date.now(),
+                id: newId,
                 date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
                 customer: {
                     name, phone, 
