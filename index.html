@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250226e';
+        const APP_VERSION = '20250226f';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -617,6 +617,7 @@
             if(selectedItems.length === 0) { alert('請選擇服務項目'); return; }
             
             const {subtotal, tax, total, deposit, balance} = calculate();
+            const taxLabel = taxRate === 0 ? '未稅' : '有稅金' + taxRate + '%';
             const quote = {
                 id: editingQuoteIndex !== null ? quotes[editingQuoteIndex].id : 'VQ' + Date.now(),
                 date: editingQuoteIndex !== null ? quotes[editingQuoteIndex].date : new Date().toISOString(),
@@ -631,7 +632,7 @@
                 },
                 items: selectedItems.map(i => ({name: i.name, qty: i.qty, price: i.price})),
                 notes: document.getElementById('quoteNotes').value.trim(),
-                subtotal, tax, total, deposit, balance, taxRate
+                subtotal, tax, total, deposit, balance, taxRate, taxLabel
             };
             
             if(editingQuoteIndex !== null) {
