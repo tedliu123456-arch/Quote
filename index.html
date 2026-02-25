@@ -56,7 +56,7 @@
         .app-phone { font-size: 12px; opacity: 0.9; }
         
         /* Content */
-        .app-content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch; }
+        .app-content { flex: 1; overflow-y: auto; padding: 120px 16px 16px; -webkit-overflow-scrolling: touch; }
         
         /* Bottom Nav */
         .bottom-nav {
@@ -148,6 +148,21 @@
         </div>
     </header>
     
+    <nav class="bottom-nav" style="position:fixed;top:54px;bottom:auto;border-top:none;border-bottom:1px solid rgba(212,168,83,0.2);">
+        <button class="nav-item active" onclick="switchScreen('new')">
+            <span class="nav-icon">📝</span><span>報價</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('list')">
+            <span class="nav-icon">📋</span><span>列表</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('presets')">
+            <span class="nav-icon">🚗</span><span>車型</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('services')">
+            <span class="nav-icon">⚙️</span><span>服務</span>
+        </button>
+    </nav>
+    
     <script>
         function clearCache() {
             if(confirm('清除快取並重新載入？\n\n这会刷新页面但保留您的报价记录。')) {
@@ -160,12 +175,6 @@
     <div class="app-content">
         <!-- New Quote -->
         <div id="screen-new" class="screen active">
-            <div style="text-align:center;padding:15px 0 20px;">
-                <div style="display:inline-block;background:linear-gradient(135deg, #1a3d34 0%, #2d5a4a 100%);padding:15px 30px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.15);">
-                    <div style="font-size:32px;font-weight:700;color:#d4a853;font-family:sans-serif;">&#x53EF;&#x69CB;</div>
-                    <div style="font-size:10px;color:rgba(255,255,255,0.8);letter-spacing:2px;margin-top:2px;">&#x570B;&#x969B;&#x5BE6;&#x696D;&#x793E;</div>
-                </div>
-            </div>
             <div class="card">
                 <div class="card-header"><div class="card-title">👤 客戶資訊</div></div>
                 <div class="form-row">
@@ -290,21 +299,6 @@
     </div>
     
     <button class="fab" id="fab" onclick="addNewItem()">+</button>
-    
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchScreen('new')">
-            <span class="nav-icon">📝</span><span>報價</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('list')">
-            <span class="nav-icon">📋</span><span>列表</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('presets')">
-            <span class="nav-icon">🚗</span><span>車型</span>
-        </button>
-        <button class="nav-item" onclick="switchScreen('services')">
-            <span class="nav-icon">⚙️</span><span>服務</span>
-        </button>
-    </nav>
 
     <script>
         let services = JSON.parse(localStorage.getItem('vango_services')) || [
