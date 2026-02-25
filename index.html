@@ -637,7 +637,7 @@
         }
         
         function filterQuotes() {
-            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase();
+            const keyword = document.getElementById('quoteSearch').value.trim().toLowerCase().replace(/-/g, '');
             const container = document.getElementById('quotesList');
             
             if(keyword === '') {
@@ -646,11 +646,11 @@
             }
             
             const filtered = quotes.filter(q => 
-                (q.customer.name && q.customer.name.toLowerCase().includes(keyword)) ||
-                (q.customer.phone && q.customer.phone.toLowerCase().includes(keyword)) ||
-                (q.customer.vehicle && q.customer.vehicle.toLowerCase().includes(keyword)) ||
-                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().includes(keyword)) ||
-                (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().includes(keyword))
+                (q.customer.name && q.customer.name.toLowerCase().replace(/-/g, '').includes(keyword)) ||
+                (q.customer.phone && q.customer.phone.toLowerCase().replace(/-/g, '').includes(keyword)) ||
+                (q.customer.vehicle && q.customer.vehicle.toLowerCase().replace(/-/g, '').includes(keyword)) ||
+                (q.customer.licensePlate && q.customer.licensePlate.toLowerCase().replace(/-/g, '').includes(keyword)) ||
+                (q.customer.salesPerson && q.customer.salesPerson.toLowerCase().replace(/-/g, '').includes(keyword))
             );
             
             if(filtered.length === 0) {
