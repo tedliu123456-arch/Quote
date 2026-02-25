@@ -194,7 +194,14 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">🚗 車牌號碼</label>
-                    <input type="text" id="licensePlate" class="form-input" placeholder="例如：ABC-1234" style="text-transform:uppercase;">
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="licensePlate" class="form-input" placeholder="例如：ABC-1234" style="text-transform:uppercase;flex:1;">
+                        <button type="button" onclick="scanLicensePlate()" style="background:var(--accent);color:var(--primary);border:none;padding:12px 16px;border-radius:12px;font-size:18px;cursor:pointer;display:flex;align-items:center;gap:5px;">📷 辨識</button>
+                    </div>
+                    <div id="scanResult" style="display:none;margin-top:10px;padding:12px;background:#e8f5e9;border-radius:8px;text-align:center;">
+                        <span style="color:var(--success);font-weight:bold;">🔍 辨識結果：</span>
+                        <span id="scannedPlate" style="font-size:18px;font-weight:bold;color:var(--primary);"></span>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
@@ -243,6 +250,9 @@
                 <div style="display:flex;gap:8px;">
                     <input type="text" id="quoteSearch" class="form-input" placeholder="搜尋姓名、電話、车牌或车型..." oninput="filterQuotes()" style="flex:1;">
                     <button onclick="filterQuotes()" style="background:var(--primary);color:white;border:none;padding:12px 16px;border-radius:12px;font-size:18px;cursor:pointer;">🔍</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button onclick="scanAndSearch()" style="background:var(--accent);color:var(--primary);border:none;padding:10px 14px;border-radius:10px;font-size:13px;cursor:pointer;flex:1;font-weight:bold;">📷 掃描車牌搜尋</button>
                 </div>
             </div>
             <div id="quotesList"></div>
@@ -295,6 +305,9 @@
     </div>
     
     <button class="fab" id="fab" onclick="addNewItem()">+</button>
+
+    <!-- Hidden camera input for license plate scanning -->
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="processImage(this)">
 
     <script>
         let services = JSON.parse(localStorage.getItem('vango_services')) || [
@@ -551,6 +564,10 @@
             document.getElementById('cameraInput').click();
         }
         
+        function scanAndSearch() {
+            document.getElementById('cameraInput').click();
+        }
+        
         function processImage(input) {
             if (!input.files || !input.files[0]) return;
             
@@ -558,41 +575,58 @@
             const reader = new FileReader();
             
             reader.onload = function(e) {
+                // 顯示掃描結果區域（在報價頁面）
                 document.getElementById('scanResult').style.display = 'block';
-                document.getElementById('scannedPlate').textContent = '辨识中...';
+                document.getElementById('scannedPlate').textContent = '🔄 辨識中...';
                 
-                // 使用 Tesseract.js 进行 OCR
+                // 使用 Tesseract.js 進行 OCR
                 Tesseract.recognize(e.target.result, 'eng+chi', {
                     logger: function(m) {}
                 }).then(function(result) {
-                    let plate = result.data.text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-                    plate = plate.replace(/[OQ]/g, '0').replace(/[Z]/g, '2');
-                    document.getElementById('scannedPlate').textContent = plate || '无法辨识';
+                    let text = result.data.text;
+                    // 提取車牌格式 (例如: ABC-1234, 1234-AB 等)
+                    let plate = text.toUpperCase().replace(/[^A-Z0-9]/gi, '');
+                    // 嘗試找到車牌格式
+                    plate = plate.replace(/[OQ]/g, '0').replace(/[Z]/g, '2').replace(/[I]/g, '1');
+                    
+                    // 如果太短，嘗試其他方式
+                    if (plate.length < 5) {
+                        plate = text.toUpperCase().replace(/[\s\n]/g, '');
+                    }
+                    
+                    document.getElementById('scannedPlate').textContent = plate || '無法辨識';
+                    
                     if (plate) {
+                        // 填入車牌
+                        document.getElementById('licensePlate').value = plate;
+                        document.getElementById('vehicleInfo').value = plate;
+                        
+                        // 自動搜尋
                         document.getElementById('quoteSearch').value = plate;
-                        filterQuotes();
+                        searchByPlate(plate);
                     }
                 }).catch(function(err) {
-                    document.getElementById('scannedPlate').textContent = '请手动输入';
+                    console.error('OCR Error:', err);
+                    document.getElementById('scannedPlate').textContent = '請手動輸入';
                 });
             };
             
             reader.readAsDataURL(file);
+            // 清空 input 以便重新選擇相同檔案
+            input.value = '';
         }
         
-        function searchByPlate() {
-            const plateInput = document.getElementById('quoteSearch').value.trim().toUpperCase();
-            if (!plateInput) return;
+        function searchByPlate(plateInput) {
+            const plate = (plateInput || document.getElementById('quoteSearch').value.trim()).toUpperCase();
+            if (!plate) return;
             
-            currentScannedPlate = plateInput;
-            
-            const plate = plateInput.toLowerCase();
-            const container = document.getElementById('quotesList');
+            currentScannedPlate = plate;
             
             // 搜尋所有報價記錄
             const matchedQuotes = quotes.filter(q => {
-                const vehicle = (q.customer.vehicle || '').toLowerCase().replace(/[\s-]/g, '');
-                return vehicle.includes(plate) || plate.includes(vehicle);
+                const vehicle = (q.customer.vehicle || '').toUpperCase().replace(/[\s-]/g, '');
+                const licensePlate = (q.customer.licensePlate || '').toUpperCase().replace(/[\s-]/g, '');
+                return vehicle.includes(plate) || plate.includes(vehicle) || licensePlate.includes(plate) || plate.includes(licensePlate);
             });
             
             if (matchedQuotes.length > 0) {
