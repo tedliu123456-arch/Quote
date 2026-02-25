@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250225c';
+        const APP_VERSION = '20250226a';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -207,6 +207,10 @@
                     <div class="form-group"><label class="form-label">📅 進廠日期</label><input type="date" id="entryDate" class="form-input"></div>
                     <div class="form-group"><label class="form-label">🚗 出廠日期</label><input type="date" id="exitDate" class="form-input"></div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">💰 營業稅 (%)</label>
+                    <input type="number" id="taxRateInput" class="form-input" placeholder="5" value="5" onchange="updateTaxRate(this.value)" style="max-width:100px;">
+                </div>
             </div>
             
             <div class="card">
@@ -330,10 +334,17 @@
                 renderPresets();
                 renderVehiclePresets();
                 document.getElementById('taxRate').value = taxRate;
+                document.getElementById('taxRateInput').value = taxRate;
             } catch(e) {
                 console.error('Init error:', e);
             }
         });
+        
+        function updateTaxRate(value) {
+            taxRate = parseFloat(value) || 5;
+            localStorage.setItem('vango_taxRate', taxRate);
+            calculate();
+        }
         
         function renderVehiclePresets() {
             const select = document.getElementById('vehiclePreset');
@@ -581,12 +592,12 @@
             reader.onload = function(e) {
                 // 顯示掃描結果區域
                 document.getElementById('scanResult').style.display = 'block';
-                document.getElementById('scannedPlate').textContent = '🔄 辨識中...';
+                document.getElementById('scannedPlate').innerHTML = '<span style="animation:pulse 1s infinite;">🔄 辨識中...</span>';
                 
                 // 將圖片轉為 base64
                 const imgData = e.target.result.split(',')[1];
                 
-                // 使用 Plate Recognizer API
+                // 使用 Plate Recognizer API - 優化版
                 fetch('https://api.platerecognizer.com/v1/plate-reader/', {
                     method: 'POST',
                     headers: {
@@ -595,15 +606,22 @@
                     },
                     body: JSON.stringify({
                         image: imgData,
-                        regions: ['tw'],
-                        detect_vehicle: 0
+                        regions: ['tw', 'us-ca', 'us'],
+                        detect_vehicle: 0,
+                        sensitivity: 0.8
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Plate Recognition Result:', data);
+                    
                     if (data.results && data.results.length > 0) {
-                        let plate = data.results[0].plate.toUpperCase();
-                        document.getElementById('scannedPlate').textContent = plate;
+                        // 取第一個結果（最高信心度）
+                        let result = data.results[0];
+                        let plate = result.plate.toUpperCase();
+                        let confidence = result.confidence ? Math.round(result.confidence * 100) : '';
+                        
+                        document.getElementById('scannedPlate').innerHTML = '<span style="color:var(--success);">✅ ' + plate + (confidence ? ' (' + confidence + '%)' : '') + '</span>';
                         
                         // 填入車牌
                         document.getElementById('licensePlate').value = plate;
@@ -612,13 +630,15 @@
                         // 自動搜尋
                         document.getElementById('quoteSearch').value = plate;
                         searchByPlate(plate);
+                    } else if (data.error) {
+                        document.getElementById('scannedPlate').textContent = '⚠️ API錯誤: ' + data.error;
                     } else {
-                        document.getElementById('scannedPlate').textContent = '無法辨識，請手動輸入';
+                        document.getElementById('scannedPlate').textContent = '❌ 無法辨識，請手動輸入';
                     }
                 })
                 .catch(function(err) {
                     console.error('Plate Recognizer API Error:', err);
-                    document.getElementById('scannedPlate').textContent = '辨識失敗，請手動輸入';
+                    document.getElementById('scannedPlate').textContent = '❌ 辨識失敗，請手動輸入';
                 });
             };
             
