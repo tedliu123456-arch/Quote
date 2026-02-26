@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a3d34">
-    <meta name="version" content="20250224b">
+    <meta name="version" content="20250226k">
     <title>凡構國際 報價系統</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250226c';
+        const APP_VERSION = '20250226k';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -237,8 +237,13 @@
             <div class="summary">
                 <div class="summary-row"><span>小計</span><span id="subtotal">$0</span></div>
                 <div class="summary-row"><span>稅金 (<span id="taxRateLabel">5</span>%)</span><span id="tax">$0</span></div>
+                <div class="summary-row" id="discountRow" style="display:none;">
+                    <span>折讓 (15%)</span><span id="discount" style="color:var(--danger);">-$0</span>
+                </div>
                 <div class="summary-row summary-total"><span>總計</span><span id="total">$0</span></div>
             </div>
+            
+            <button class="btn btn-accent btn-block" id="discountBtn" onclick="toggleDiscount()" style="margin-bottom:14px;">➖ 折讓 15%</button>
             
             <div class="card">
                 <div class="card-title">💰 訂金</div>
@@ -605,20 +610,50 @@
             calculate();
         }
         
+        let discountEnabled = false;
+        
+        function toggleDiscount() {
+            discountEnabled = !discountEnabled;
+            const btn = document.getElementById('discountBtn');
+            const row = document.getElementById('discountRow');
+            if (discountEnabled) {
+                btn.style.background = 'var(--danger)';
+                btn.style.color = 'white';
+                btn.textContent = '✅ 已折讓 15%';
+                row.style.display = 'flex';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.textContent = '➖ 折讓 15%';
+                row.style.display = 'none';
+            }
+            calculate();
+        }
+        
         function calculate() {
-            let subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+            let origSubtotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+            
+            // 折讓計算
+            let discount = 0;
+            let subtotal = origSubtotal;
+            if (discountEnabled) {
+                discount = Math.round(origSubtotal * 0.15);
+                subtotal = origSubtotal - discount;
+            }
+            
             let tax = Math.round(subtotal * (taxRate / 100));
             let total = subtotal + tax;
             let deposit = parseInt(document.getElementById('depositAmount').value) || 0;
             let balance = total - deposit;
             
             document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString();
+            document.getElementById('discount').textContent = '-$' + discount.toLocaleString();
             document.getElementById('tax').textContent = '$' + tax.toLocaleString() + ' (' + taxRate + '%)';
             document.getElementById('taxRateLabel').textContent = taxRate;
             document.getElementById('total').textContent = '$' + total.toLocaleString();
             document.getElementById('balanceAmount').textContent = '$' + balance.toLocaleString();
             
-            return {subtotal, tax, total, deposit, balance};
+            return {subtotal, tax, total, deposit, balance, discount};
         }
         
         function saveQuote() {
