@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script>
         // 版本檢查 - 強制更新
-        const APP_VERSION = '20250227b';
+        const APP_VERSION = '20250226c';
         const savedVersion = localStorage.getItem('vango_version');
         
         if (savedVersion !== APP_VERSION) {
@@ -336,6 +336,23 @@
         let editingQuoteIndex = null;
         let taxRate = parseFloat(localStorage.getItem('vango_taxRate')) || 5;
         
+        // 車型快捷鍵 - 提前定義避免ReferenceError
+        let presets = JSON.parse(localStorage.getItem('vango_presets')) || [
+            {name:'VW Ocean 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'VW Beach 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Marco Polo', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
+            {name:'Sunlight 600rt', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight 600', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight 601', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
+            {name:'Sunlight T67s', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
+            {name:'Sunlight T58', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]}
+        ];
+        
+        // 第一次載入時儲存到 localStorage
+        if(!localStorage.getItem('vango_presets')) {
+            localStorage.setItem('vango_presets', JSON.stringify(presets));
+        }
+        
         document.addEventListener('DOMContentLoaded', () => { 
             try {
                 renderServices(); 
@@ -358,9 +375,12 @@
         
         function renderVehiclePresets() {
             const select = document.getElementById('vehiclePreset');
-            if(presets.length > 0) {
+            if(!select) return;
+            if(presets && presets.length > 0) {
                 select.innerHTML = '<option value="">🚗 快捷鍵</option>' + 
                     presets.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+            } else {
+                select.innerHTML = '<option value="">🚗 快捷鍵</option>';
             }
         }
         
@@ -1135,23 +1155,7 @@
             }
         }
         
-        // 車型快捷鍵功能
-        let presets = JSON.parse(localStorage.getItem('vango_presets')) || [
-            {name:'VW Ocean 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
-            {name:'VW Beach 6.1', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
-            {name:'Marco Polo', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
-            {name:'Sunlight 600rt', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
-            {name:'Sunlight 600', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
-            {name:'Sunlight 601', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]},
-            {name:'Sunlight T67s', items:[{name:'太陽能系統 600W',price:28000},{name:'鋰電300AH',price:42000},{name:'配電系統',price:10000},{name:'inverter',price:18000},{name:'USB座',price:2400},{name:'LED燈組',price:5000}]},
-            {name:'Sunlight T58', items:[{name:'太陽能系統 400W',price:22000},{name:'鋰電200AH',price:32000},{name:'配電系統',price:8000},{name:'inverter',price:15000},{name:'USB座',price:1200},{name:'LED燈組',price:3500}]}
-        ];
-        
-        // 第一次載入時儲存到 localStorage
-        if(!localStorage.getItem('vango_presets')) {
-            localStorage.setItem('vango_presets', JSON.stringify(presets));
-        }
-        
+        // 車型快捷鍵功能 (使用前面已定義的 presets)
         function renderPresets() {
             const container = document.getElementById('presetsList');
             if(presets.length === 0) {
